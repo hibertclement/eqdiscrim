@@ -65,4 +65,24 @@ def read_sihex_xls(inout=True):
     y = np.empty(nev, dtype='S2')
     y[...] = 'ke'
 
+    # PROBLEM WITH EVENTS in the out list : some are not near France
+    ipb=[]
+    ipb.append(np.where(X[:, 0]==255001))
+    ipb.append(np.where(X[:, 0]==180307))
+    ipb.append(np.where(X[:, 0]==253079))
+    ipb.append(np.where(X[:, 0]==256577))
+    ipb.append(np.where(X[:, 0]==180664))
+    ipb.append(np.where(X[:, 0]==180050))
+    ipb.append(np.where(X[:, 0]==177133))
+    ipb.append(np.where(X[:, 0]==179219))
+    ipb.append(np.where(X[:, 0]==177792))
+    ipb.append(np.where(X[:, 0]==313098))
+    ipb.append(np.where(X[:, 0]==670271))
+    ipb.append(np.where(X[:, 0]==640834))
+    ipb.append(np.where(X[:, 0]==658151))
+    ipb.append(np.where(X[:, 0]==657909))
+    ipb.append(np.where(X[:, 0]==255946))
+    X = np.delete(X, (ipb), axis=0)
+    y = np.delete(y, (ipb), axis=0)
+
     return X, y, names

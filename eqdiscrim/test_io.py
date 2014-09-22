@@ -20,7 +20,7 @@ class IoReadTests(unittest.TestCase):
         X, y, names = read_sihex_xls()
 
         nev, natt = X.shape
-        self.assertEqual(nev, 50585)
+        self.assertEqual(nev, 50570)
         self.assertEqual(natt, 7)
         self.assertEqual(y[0], 'ke')
         self.assertEqual(names[1], 'OTIME')
