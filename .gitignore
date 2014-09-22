@@ -55,3 +55,6 @@ target/
 
 # vi stuff
 *.swp
+
+# figures
+*.png
