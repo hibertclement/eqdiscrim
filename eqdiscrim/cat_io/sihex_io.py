@@ -82,6 +82,10 @@ def read_sihex_xls(inout=True):
     ipb.append(np.where(X[:, 0]==658151))
     ipb.append(np.where(X[:, 0]==657909))
     ipb.append(np.where(X[:, 0]==255946))
+    # this next event has no depth
+    ipb.append(np.where(X[:, 0]==640818))
+    # this next event is rather too deep
+    ipb.append(np.where(X[:, 0]==159405))
     X = np.delete(X, (ipb), axis=0)
     y = np.delete(y, (ipb), axis=0)
 
