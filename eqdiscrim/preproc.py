@@ -60,3 +60,27 @@ def xy_to_latlon(X, names, ix, iy):
     names_new[iy] = 'LON'
 
     return X_new, names_new
+
+def dist_to_n_closest_stations(X_xy, S_xy, n):
+    """
+    Returns a numpy array containing the distance (in reduced coordinates) to
+    the nth nearest station
+    """
+
+    nev, nd = X_xy.shape
+    nst, nd = S_xy.shape
+
+    dist = np.empty((nev,n), dtype=np.float)
+
+    for iev in xrange(nev):
+        xev = X_xy[iev, 0]
+        yev = X_xy[iev, 1]
+        # get the distance to each point
+        d = np.array([np.sqrt((xev - S_xy[ist, 0])**2 + (yev - S_xy[ist, 1])**2)
+                      for ist in xrange(nst)])
+        # sort in ascending order
+        d.sort() 
+        # save the nth value
+        dist[iev, 0:n] = d[0:n]
+
+    return dist
