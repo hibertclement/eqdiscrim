@@ -13,4 +13,4 @@ def read_renass():
     names = list(["Code", "Lat", "Lon", "Elev(m)"])
     stations = s_pd[names].values
 
-    return stations
+    return stations, names

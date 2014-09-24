@@ -32,9 +32,9 @@ class IoReadTests(unittest.TestCase):
 
     def test_read_renass(self):
         
-        stations = read_renass()
+        stations, names = read_renass()
         nsta, natt = stations.shape
-        self.assertEqual(nsta, 59)
+        self.assertEqual(nsta, 81)
         self.assertEqual(natt, 4)
         self.assertEqual(stations[1, 1], 43.0858)
 
