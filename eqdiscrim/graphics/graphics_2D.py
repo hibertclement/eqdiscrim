@@ -1,8 +1,8 @@
 import numpy as np
 import matplotlib.pyplot as plt
 
-colors = ['blue', 'lime', 'red', 'yellow', 'cyan', 'purple', 'black',
-          'white', 'orange', 'green', 'grey']
+colors = ['blue', 'lime', 'red', 'yellow', 'cyan', 'orange', 'black',
+          'white', 'purple', 'green', 'grey']
 
 # plot 2D clusters
 def plot_2D_cluster_scatter(X, labels, at_name, filename):
@@ -14,17 +14,20 @@ def plot_2D_cluster_scatter(X, labels, at_name, filename):
     filename = filename for figure output
 
     """
-    nclust = len(np.unique(labels))
+    plt.figure()
+    clust_names = np.unique(labels)
+    nclust = len(clust_names)
     for i in xrange(nclust):
-        x = X[:, 0][labels == i]
-        y = X[:, 1][labels == i]
+        cname = clust_names[i]
+        x = X[:, 0][labels == cname]
+        y = X[:, 1][labels == cname]
         plt.scatter(x, y, c=colors[i])
-    plt.legend(np.arange(nclust))
+    plt.legend(clust_names)
     plt.xlabel(at_name[0])
     plt.ylabel(at_name[1])
     plt.savefig(filename)
 
-def plot_att_hist_by_author(X_d, X_auth, att_range, att_name, filename):
+def plot_att_hist_by_label(X_d, X_auth, att_range, att_name, filename):
     """
     Plots attribute histograms by author
     """
