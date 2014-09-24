@@ -22,12 +22,12 @@ def plot_2D_cluster_scatter(X, labels, at_name, filename):
         x = X[:, 0][labels == cname]
         y = X[:, 1][labels == cname]
         plt.scatter(x, y, c=colors[i])
-    plt.legend(clust_names)
+    plt.legend(clust_names, bbox_to_anchor=(1.05, 1.05))
     plt.xlabel(at_name[0])
     plt.ylabel(at_name[1])
     plt.savefig(filename)
 
-def plot_att_hist_by_label(X_d, X_auth, att_range, att_name, filename):
+def plot_att_hist_by_label(X_d, X_auth, att_range, nbins, att_name, filename):
     """
     Plots attribute histograms by author
     """
@@ -39,7 +39,7 @@ def plot_att_hist_by_label(X_d, X_auth, att_range, att_name, filename):
 
     # first plot - all together
     plt.sca(axes[0])
-    n, bins, patches = plt.hist(X_d, 20, range=att_range, normed=1,
+    n, bins, patches = plt.hist(X_d, nbins, range=att_range, normed=1,
                                 histtype='step', color='black')
     plt.xlabel(att_name)
     plt.ylabel('Probability density')
@@ -53,9 +53,9 @@ def plot_att_hist_by_label(X_d, X_auth, att_range, att_name, filename):
     for i in xrange(n_auth):
         author = u_auth[i]
         d = X_d[:][X_auth == author]
-        n, bins, patches = plt.hist(d, 20, range=att_range, normed=1,
+        n, bins, patches = plt.hist(d, nbins, range=att_range, normed=1,
                                     histtype='step', color=colors[i])
-    plt.legend(u_auth)
+    plt.legend(u_auth, bbox_to_anchor=(1.3, 1.05))
     plt.xlabel(att_name)
     plt.ylabel('Probability density')
 
