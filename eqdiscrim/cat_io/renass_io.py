@@ -24,6 +24,45 @@ def read_stations_fr():
     names = list(["NOM", "LATITUDE", "LONGITUDE", "ELEV"])
     names_DT = list(["DATEDEB", "HDEB", "DATEFIN", "HFIN"])
 
-    stations = s_pd[names].values
+    # read time information (coded as strings)
+    DT = s_pd[names_DT].values
+    nst, nd = DT.shape
+    stime = np.empty(nst, dtype=object)
+    etime = np.empty(nst, dtype=object)
+    for i in xrange(nev):
+        # decode date string
+        s_date_parts = DT[i, 0].split('/')
+        e_date_parts = DT[i, 2].split('/')
+        s_time_parts = DT[i, 1].split(':')
+        e_time_parts = DT[i, 3].split(':')
+
+        # construct start time
+        year = np.int(s_date_parts[0])
+        month = np.int(s_date_parts[1])
+        day = np.int(s_date_parts[2])
+        hour = np.int(s_time_parts[0])
+        minute = np.int(s_time_parts[1])
+        seconds = np.int(np.floor(np.float(s_time_parts[2])))
+        microseconds = np.int((np.float(s_time_parts[2]) - seconds) * 1e6)
+        # make a datetime object by merging date and time
+        stime[i] = datetime(year, month, day, hour, minute, seconds,
+
+        # construct end time
+        year = np.int(e_date_parts[0])
+        month = np.int(e_date_parts[1])
+        day = np.int(e_date_parts[2])
+        hour = np.int(e_time_parts[0])
+        minute = np.int(e_time_parts[1])
+        seconds = np.int(np.floor(np.float(e_time_parts[2])))
+        microseconds = np.int((np.float(e_time_parts[2]) - seconds) * 1e6)
+        # make a datetime object by merging date and time
+        etime[i] = datetime(year, month, day, hour, minute, seconds,
+
+
+    # get the basic parameters
+    s_tmp = s_pd[names].values
+
+    # add the time values behind the basic ones and fix the names
+
     return stations, names
 
