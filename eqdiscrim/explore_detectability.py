@@ -14,7 +14,7 @@ to_zone = tz.gettz('Europe/Paris')
 
 # read catalogs
 S_latlon, names_sta = read_renass()
-X_latlon, y, names_latlon = read_sihex_xls()
+X_latlon, y, names_latlon = read_sihex_xls(inout=False)
 
 # extract the x and y coordinates
 # for events
@@ -61,7 +61,7 @@ plt.savefig('sihex_events_stations.png')
 d3sta = dist_to_n_closest_stations(X_xy, S_xy, 3)
 
 # create a cluster-izer on this distance
-nclust = 5
+nclust = 3
 clf = cluster.KMeans(init='k-means++', n_clusters=nclust, random_state=42)
 clf.fit(d3sta)
 
