@@ -44,8 +44,13 @@ class IoReadTests(unittest.TestCase):
         stations, names = read_stations_fr()
         nsta, natt = stations.shape
         self.assertEqual(nsta, 306)
-        self.assertEqual(natt, 4)
+        self.assertEqual(natt, 6)
         self.assertEqual(stations[1, 1], 47.268)
+
+        test_time = datetime(1962, 1, 22, 6, 50, 55, 0, utc)
+        self.assertEqual(test_time - stations[1, 4], timedelta(0))
+        test_time = datetime(2009, 12, 31, 11, 10, 22, 0, utc)
+        self.assertEqual(test_time - stations[1, 5], timedelta(0))
 
 if __name__ == '__main__':
 
