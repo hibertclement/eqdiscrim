@@ -10,8 +10,8 @@ utc = tz.gettz('UTC')
 
 def suite():
     suite = unittest.TestSuite()
-    #suite.addTest(IoReadTests('test_read_sihex_xls'))
-    #suite.addTest(IoReadTests('test_read_renass'))
+    suite.addTest(IoReadTests('test_read_sihex_xls'))
+    suite.addTest(IoReadTests('test_read_renass'))
     suite.addTest(IoReadTests('test_read_stations_fr'))
     return suite
 

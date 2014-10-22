@@ -33,6 +33,7 @@ def latlon_to_xy(X, names, ilat, ilon):
 
     return X_new, names_new
 
+
 def xy_to_latlon(X, names, ix, iy):
     """
         Given an attribute matrix X, and the indexes corresponding to the
@@ -49,9 +50,9 @@ def xy_to_latlon(X, names, ix, iy):
 
     # put the results back into the matrix
     X_new = X
-    # x becomes longitude 
+    # x becomes longitude
     X_new[:, ix] = lon[:]
-    # y becomes latitude 
+    # y becomes latitude
     X_new[:, iy] = lat[:]
 
     # fix up the names, too
@@ -61,26 +62,68 @@ def xy_to_latlon(X, names, ix, iy):
 
     return X_new, names_new
 
-def dist_to_n_closest_stations(X_xy, S_xy, n):
+
+def dist_to_n_closest_stations(X_xy, S_xy, n, timing=False):
     """
     Returns a numpy array containing the distance (in reduced coordinates) to
-    the nth nearest station
+    the n nearest stations. If there are fewer than n stations, then the
+    returned array is padded with the largest available distance for each
+    event. If no stations are available, the event is ignored.
+
+    :param X_xy: a 2D numpy array containing one line per event, and whose
+        first two columns contain x and y coordinates of the event
+    :param S_xy: a 2D numpy array containing one line per station, and whose
+        first two columns contain x and y coordinates of the station
+    :param n: number of nearest stations to consider
+    :type timing: boolean, optional
+    :param timing: if True, then X_xy contains a third column with the orgin
+        time as a datetime object, and X_xy contains a third and fourth column
+        with start and end times of the station as datetime objects
+    :rtype: a 2D numpy array containing one line per event and n columns, the
+        distances to the n closest stations. This array may contain fewer
+        events than the input X_xy array
     """
 
     nev, nd = X_xy.shape
     nst, nd = S_xy.shape
 
-    dist = np.empty((nev,n), dtype=np.float)
+    dist = np.empty((nev, n), dtype=np.float)
 
+    idist = 0   # need an independent counter for idist
     for iev in xrange(nev):
         xev = X_xy[iev, 0]
         yev = X_xy[iev, 1]
-        # get the distance to each point
-        d = np.array([np.sqrt((xev - S_xy[ist, 0])**2 + (yev - S_xy[ist, 1])**2)
-                      for ist in xrange(nst)])
+        if timing:
+            tev = X_xy[iev, 2]
+            # get the distance to each point taking timing into account
+            d = np.array([np.sqrt((xev-S_xy[ist, 0])**2+(yev-S_xy[ist, 1])**2)
+                          for ist in xrange(nst) if (tev >= S_xy[ist, 2] and
+                                                     tev <= S_xy[ist, 3])])
+        else:
+            # get the distance to each point
+            d = np.array([np.sqrt((xev-S_xy[ist, 0])**2+(yev-S_xy[ist, 1])**2)
+                          for ist in xrange(nst)])
         # sort in ascending order
-        d.sort() 
-        # save the nth value
-        dist[iev, 0:n] = d[0:n]
+        d.sort()
+        # save the n distances
+        try:
+            dist[idist, 0:n] = d[0:n]
+            idist = idist + 1
+        except ValueError:
+            nd = len(d)
+            if nd == 0:
+                # the event occurred when there were no stations to record it
+                # this case should never happen, but if it does, the event
+                # should be ignored (do not increasce idist counter)
+                pass
+            else:
+                # there are fewer than n stations
+                # pad the distance matrix with the largest available distance
+                dist[idist, 0:nd] = d[0:nd]
+                dist[idist, nd:n] = d[nd-1]
+                idist = idist + 1
+
+    # resize array if necessary
+    dist.resize((idist, n))
 
     return dist
