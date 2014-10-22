@@ -4,6 +4,8 @@ import matplotlib.pyplot as plt
 colors = ['blue', 'lime', 'red', 'yellow', 'cyan', 'orange', 'black',
           'white', 'purple', 'green', 'grey']
 
+epochs = [1970, 1978, 1990]
+
 # plot 2D clusters
 def plot_2D_cluster_scatter(X, labels, at_name, filename):
     """
@@ -26,6 +28,53 @@ def plot_2D_cluster_scatter(X, labels, at_name, filename):
     plt.xlabel(at_name[0])
     plt.ylabel(at_name[1])
     plt.savefig(filename)
+
+def plot_2D_cluster_scatter_by_epoch(X, Xt, labels, at_name, filename):
+    """
+    Plots 2D clusters.
+    X = (n,2) matrix of n instances with 2 attributes
+    Xt = (n,1) vector of timing info
+    labels = cluster labels (n values, one per instance)
+    at_names = attribute names (list of 2 strings)
+    filename = filename for figure output
+
+    """
+    # set up plot
+    plt.figure()
+    fig, axes = plt.subplots(2, 2)
+    fig.set_size_inches(12, 12)
+
+    clust_names = np.unique(labels)
+    nclust = len(clust_names)
+    years = np.array([Xt[i].year for i in xrange(len(Xt))])
+    n_epochs = len(epochs)+1
+
+    # loop over epochs
+    for ie in xrange(n_epochs):
+        plt.sca(axes[ie/2, np.mod(ie, 2)])
+        for i in xrange(nclust):
+            cname = clust_names[i]
+            if ie == 0:
+                x = X[:, 0][(labels == cname) & (years < epochs[ie])]
+                y = X[:, 1][(labels == cname) & (years < epochs[ie])]
+                plt.title('< %d' % epochs[ie])
+            elif ie == n_epochs-1:
+                x = X[:, 0][(labels == cname) & (years >= epochs[-1])]
+                y = X[:, 1][(labels == cname) & (years >= epochs[-1])]
+                plt.title('> %d' % epochs[-1])
+            else:
+                x = X[:, 0][(labels == cname) & (years >= epochs[ie-1]) &
+                            (years < epochs[ie])]
+                y = X[:, 1][(labels == cname) & (years >= epochs[ie-1]) &
+                            (years < epochs[ie])]
+                plt.title('%d - %d' % (epochs[ie-1], epochs[ie]))
+            plt.scatter(x, y, c=colors[i])
+        plt.legend(clust_names, bbox_to_anchor=(1.05, 1.05))
+        plt.xlabel(at_name[0])
+        plt.ylabel(at_name[1])
+
+    plt.savefig(filename)
+
 
 def plot_att_hist_by_label(X_d, X_auth, att_range, nbins, att_name, filename):
     """

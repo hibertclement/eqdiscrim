@@ -3,6 +3,7 @@ import numpy as np
 from datetime import datetime
 from preproc import latlon_to_xy, xy_to_latlon
 from preproc import dist_to_n_closest_stations
+from preproc import n_stations_per_year
 
 def suite():
 
@@ -11,6 +12,7 @@ def suite():
     suite.addTest(GeoPreprocTests('test_dist_to_nth_station'))
     suite.addTest(GeoPreprocTests('test_dist_to_nth_station_pathological'))
     suite.addTest(GeoPreprocTests('test_dist_to_nth_station_timing'))
+    suite.addTest(GeoPreprocTests('test_n_stations_per_year'))
     return suite
 
 
@@ -104,6 +106,34 @@ class GeoPreprocTests(unittest.TestCase):
 
         self.assertTrue(d[ival, 0] <= d[ival, 1])
         self.assertTrue(d[ival, 1] <= d[ival, 2])
+
+    def test_n_stations_per_year(self):
+
+        nst = 500
+
+        # make some random year vectors
+        rand_start_years = np.random.randint(1960, 2015, (nst, 1))
+        rand_duration_years = np.random.randint(0, 100, (nst, 1))
+        rand_end_years = rand_start_years + rand_duration_years
+
+        # stack
+        years_start_end = np.hstack((rand_start_years.reshape(nst, 1),
+                                 rand_end_years.reshape(nst, 1)))
+
+        # transform to datetime
+        S = np.empty((nst, 2), dtype=object)
+
+        for i in xrange(nst):
+            S[i, 0] = datetime(years_start_end[i, 0], 1, 1, 0, 0, 0)
+            S[i, 1] = datetime(years_start_end[i, 1], 1, 1, 0, 0, 0)
+
+        # get count for a fixed year
+        year_count = n_stations_per_year(S, 1970, 1975)
+        n_bef_1970 = np.sum(rand_start_years <= 1970)
+
+        self.assertTrue(n_bef_1970 >= year_count[0, 1])
+
+
 
 
 if __name__ == '__main__':

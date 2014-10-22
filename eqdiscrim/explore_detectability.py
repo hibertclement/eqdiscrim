@@ -1,16 +1,21 @@
 import numpy as np
 import matplotlib.pyplot as plt
+from pickle import load, dump
 from cat_io.sihex_io import read_sihex_xls
 from cat_io.renass_io import read_renass, read_stations_fr
 from preproc import latlon_to_xy, dist_to_n_closest_stations
 from sklearn.preprocessing import StandardScaler
 from sklearn import cluster
 from graphics.graphics_2D import plot_2D_cluster_scatter
+from graphics.graphics_2D import plot_2D_cluster_scatter_by_epoch
 from graphics.graphics_2D import plot_att_hist_by_label
 from dateutil import tz
 
 
 to_zone = tz.gettz('Europe/Paris')
+clust_file = 'clusteriser.dat'
+
+do_clust = False
 
 # read catalogs
 #S_latlon, names_sta = read_renass()
@@ -35,7 +40,6 @@ X_m = X[:, imag]
 # extract local time
 i_time = 1
 X_loctime = np.array([t.astimezone(to_zone) for t in X[:, i_time]])
-X_year = np.array([t.year for t in X_loctime])
 X_hour = np.array([t.hour for t in X_loctime])
 
 # save UTC origin time
@@ -63,37 +67,49 @@ plt.figure()
 plt.scatter(X_xy[:, 0], X_xy[:,1])
 plt.scatter(S_xy[:, 0], S_xy[:,1], marker='v', color='red')
 plt.xlabel('Reduced x coordinate')
-plt.xlabel('Reduced y coordinate')
+plt.ylabel('Reduced y coordinate')
 plt.savefig('sihex_events_stations.png')
 
-# get distance from 3rd station (using timing info)
-nev, nd = X_xy.shape
-X_xyt = np.hstack((X_xy, X_otime.reshape(nev, 1)))
-S_xyt = np.hstack((S_xy, S_times))
-d3sta = dist_to_n_closest_stations(X_xyt, S_xyt, 3, timing=True)
+if do_clust:
 
-# create a cluster-izer on this distance
-nclust = 3
-clf = cluster.KMeans(init='k-means++', n_clusters=nclust, random_state=42)
-clf.fit(d3sta)
+    # get distance from 3rd station (using timing info)
+    nev, nd = X_xy.shape
+    X_xyt = np.hstack((X_xy, X_otime.reshape(nev, 1)))
+    S_xyt = np.hstack((S_xy, S_times))
+    d3sta = dist_to_n_closest_stations(X_xyt, S_xyt, 3, timing=True)
+
+    # create a cluster-izer on this distance
+    nclust = 3
+    clf = cluster.KMeans(init='k-means++', n_clusters=nclust, random_state=42)
+    clf.fit(d3sta)
+
+    # dump clusterer to file
+    f_ = open(clust_file,'w')
+    dump(clf, f_)
+    f_.close()
+
+# read clusterer from file
+f_ = open(clust_file, 'r')
+clf = load(f_)
+f_.close()
 
 # plot geographic clusters
 plot_2D_cluster_scatter(X_xy, clf.labels_,
                         ('Reduced x coordinate', 'Reduced y coordinate'),
                         'clusters_dist_to_3_closest_stations.png')
 
+# plot geographic clusters by epoch
+plot_2D_cluster_scatter_by_epoch(X_xy, X_otime, clf.labels_,
+                        ('Reduced x coordinate', 'Reduced y coordinate'),
+                        'clusters_dist_to_3_closest_stations_by_epoch.png')
 
 # plot magnitude as a function of clusters
 nbins = 20
 mag_range=(0, 6)
 plot_att_hist_by_label(X_m, clf.labels_, mag_range, nbins, 'Mw',
                        'mag_pdf_by_station_cluster.png')
-# depth
-depth_range=(-3, 40)
-plot_att_hist_by_label(X_d, clf.labels_, depth_range, nbins, 'Depth (km)',
-                       'depth_pdf_by_station_cluster.png')
 
-# local hour
+# plot local hour as a function of clusters
 nbins = 24
 time_range = (0, 23)
 plot_att_hist_by_label(X_hour, clf.labels_, time_range, nbins, 'Local hour',

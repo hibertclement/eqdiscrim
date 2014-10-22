@@ -127,3 +127,33 @@ def dist_to_n_closest_stations(X_xy, S_xy, n, timing=False):
     dist.resize((idist, n))
 
     return dist
+
+
+def n_stations_per_year(S_start_end, start_year, end_year):
+    """
+    Returns the number of stations per year (only precise to the nearest year).
+
+    :param S_start_end: a 2D ndarray containing one row per station and two
+        columns containing respectively the start and end times of the station
+        as datetime objects
+    :param start_year: first year of interest
+    :param end_year: last year of interest
+    :rtype: a 2D ndarray containing years and number of active stations in its
+        two columns
+    """
+
+    nst, nd = S_start_end.shape
+    nyears = end_year - start_year + 1
+
+    year_count = np.empty((nyears, 2), dtype=np.int)
+
+    for iy in xrange(nyears):
+        year = start_year + iy
+        sta = [i for i in xrange(nst)
+               if (year >= S_start_end[i, 0].year and
+                   year <= S_start_end[i, 1].year)]
+        nsta = len(sta)
+        year_count[iy, 0] = year
+        year_count[iy, 1] = nsta
+
+    return year_count
