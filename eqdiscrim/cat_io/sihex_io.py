@@ -10,6 +10,8 @@ utc = tz.gettz('UTC')
 sihex_xls = '../static_catalogs/SIHEXV2-inout-final.xlsx'
 sihex_txt = '../static_catalogs/SIHEXV2-catalogue-final.txt'
 
+notecto_lst = '../static_catalogs/no_tecto.lst'
+
 
 def read_sihex_xls(inout=True):
 
