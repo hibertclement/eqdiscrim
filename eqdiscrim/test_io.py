@@ -1,6 +1,6 @@
 import unittest
 import numpy as np
-from cat_io.sihex_io import read_sihex_xls
+from cat_io.sihex_io import read_sihex_xls, read_notecto_lst
 from cat_io.renass_io import read_renass, read_stations_fr
 from datetime import datetime, timedelta
 from dateutil import tz
@@ -13,11 +13,13 @@ def suite():
     suite.addTest(IoReadTests('test_read_sihex_xls'))
     suite.addTest(IoReadTests('test_read_renass'))
     suite.addTest(IoReadTests('test_read_stations_fr'))
+    suite.addTest(IoReadTests('test_read_notecto_lst'))
     return suite
 
 
 class IoReadTests(unittest.TestCase):
 
+    @unittest.skip('Too long to wait...')
     def test_read_sihex_xls(self):
 
         X, y, names = read_sihex_xls()
@@ -51,6 +53,21 @@ class IoReadTests(unittest.TestCase):
         self.assertEqual(test_time - stations[1, 4], timedelta(0))
         test_time = datetime(2009, 12, 31, 11, 10, 22, 0, utc)
         self.assertEqual(test_time - stations[1, 5], timedelta(0))
+
+    def test_read_notecto_lst(self):
+
+        X, y, names = read_notecto_lst()
+
+        nev, natt = X.shape
+        self.assertEqual(nev, 37448)
+        self.assertEqual(natt, 7)
+        self.assertEqual(y[0], 'sm')
+        self.assertEqual(names[1], 'OTIME')
+
+        test_otime = datetime(1975, 11, 7, 9, 13, 53, np.int(0.3 * 1e6), utc)
+        self.assertAlmostEqual((test_otime - X[3, 1]).seconds,
+                               timedelta(0).seconds)
+
 
 if __name__ == '__main__':
 
