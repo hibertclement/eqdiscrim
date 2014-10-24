@@ -75,7 +75,7 @@ S_times = S[:, istart:iend+1]
 plt.figure()
 plt.scatter(X_xy[:, 0], X_xy[:,1], color='blue', label='ke')
 plt.scatter(B_xy[:, 0], B_xy[:,1], color='yellow', label='km/sm')
-plt.scatter(S_xy[:, 0], S_xy[:,1], marker='v', color='red')
+plt.scatter(S_xy[:, 0], S_xy[:,1], marker='v', color='red', label='station')
 plt.xlabel('Reduced x coordinate')
 plt.ylabel('Reduced y coordinate')
 plt.legend()
