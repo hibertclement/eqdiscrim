@@ -36,7 +36,7 @@ class IoReadTests(unittest.TestCase):
         self.assertEqual(test_otime - X[3, 1], timedelta(0))
 
     def test_read_renass(self):
-        
+
         stations, names = read_renass()
         nsta, natt = stations.shape
         self.assertEqual(nsta, 81)
@@ -44,7 +44,7 @@ class IoReadTests(unittest.TestCase):
         self.assertEqual(stations[1, 1], 43.0858)
 
     def test_read_stations_fr(self):
-        
+
         stations, names = read_stations_fr()
         nsta, natt = stations.shape
         self.assertEqual(nsta, 306)
@@ -88,8 +88,6 @@ class IoReadTests(unittest.TestCase):
 
         self.assertTrue(p1.within(poly))
         self.assertFalse(poly.contains(p2))
-
-
 
 
 if __name__ == '__main__':

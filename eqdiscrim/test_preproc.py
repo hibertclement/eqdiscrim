@@ -20,11 +20,11 @@ def suite():
 
 
 class GeoPreprocTests(unittest.TestCase):
-    
+
     def test_latlon_conversion(self):
 
         nval = 100
-        X = np.random.rand(nval,5)
+        X = np.random.rand(nval, 5)
         names = list(["ID", "LAT", "LON", "BLA1", "BLA2"])
         # make the second colum French latitudes
         ilat = 1
@@ -121,7 +121,7 @@ class GeoPreprocTests(unittest.TestCase):
 
         # stack
         years_start_end = np.hstack((rand_start_years.reshape(nst, 1),
-                                 rand_end_years.reshape(nst, 1)))
+                                     rand_end_years.reshape(nst, 1)))
 
         # transform to datetime
         S = np.empty((nst, 2), dtype=object)

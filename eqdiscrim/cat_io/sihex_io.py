@@ -50,7 +50,7 @@ def read_notecto_lst():
         microseconds = np.int((np.float(time_parts[2]) - seconds) * 1e6)
         # make a datetime object by merging date and time
         otime[i] = datetime(year, month, day, hour, minute, seconds,
-                            microseconds,utc)
+                            microseconds, utc)
 
     # transform the pandas format to numpy format for later use in sklearn
     names = list(["ID", "LAT", "LON", "PROF", "Mw", "AUTEUR"])
@@ -67,7 +67,7 @@ def read_notecto_lst():
     y = pd_ev["TYPE"].values
 
     # PROBLEM WITH EVENTS in the out list : some are not near France
-    ipb=[]
+    ipb = []
     # add all events that are outside the SiHex boundaries
     for i in xrange(nev):
         ip = Point(X[i, 3], X[i, 2])  # create a point (lon, lat)
@@ -77,7 +77,6 @@ def read_notecto_lst():
     # clean up
     X = np.delete(X, (ipb), axis=0)
     y = np.delete(y, (ipb), axis=0)
-
 
     return X, y, names
 
@@ -114,14 +113,14 @@ def read_sihex_xls(inout=True):
         microseconds = np.int((np.float(time_parts[2]) - seconds) * 1e6)
         # make a datetime object by merging date and time
         otime[i] = datetime(year, month, day, hour, minute, seconds,
-                            microseconds,utc)
+                            microseconds, utc)
 
     # transform the pandas format to numpy format for later use in sklearn
     names = list(["ID", "LAT", "LON", "PROF", "Mw", "AUTEUR"])
     X_in = eq_in[names].values
     if inout:
         X_out = eq_out[names].values
-        X_tmp = np.vstack((X_in, X_out)) 
+        X_tmp = np.vstack((X_in, X_out))
     else:
         X_tmp = X_in
 
@@ -137,28 +136,28 @@ def read_sihex_xls(inout=True):
     y[...] = 'ke'
 
     # PROBLEM WITH EVENTS in the out list : some are not near France
-    ipb=[]
+    ipb = []
     if inout:
         # These events are in the OUT part and are too far from France
-        ipb.append(np.where(X[:, 0]==255001))
-        ipb.append(np.where(X[:, 0]==180307))
-        ipb.append(np.where(X[:, 0]==253079))
-        ipb.append(np.where(X[:, 0]==256577))
-        ipb.append(np.where(X[:, 0]==180664))
-        ipb.append(np.where(X[:, 0]==180050))
-        ipb.append(np.where(X[:, 0]==177133))
-        ipb.append(np.where(X[:, 0]==179219))
-        ipb.append(np.where(X[:, 0]==177792))
-        ipb.append(np.where(X[:, 0]==313098))
-        ipb.append(np.where(X[:, 0]==670271))
-        ipb.append(np.where(X[:, 0]==640834))
-        ipb.append(np.where(X[:, 0]==658151))
-        ipb.append(np.where(X[:, 0]==657909))
-        ipb.append(np.where(X[:, 0]==255946))
+        ipb.append(np.where(X[:, 0] == 255001))
+        ipb.append(np.where(X[:, 0] == 180307))
+        ipb.append(np.where(X[:, 0] == 253079))
+        ipb.append(np.where(X[:, 0] == 256577))
+        ipb.append(np.where(X[:, 0] == 180664))
+        ipb.append(np.where(X[:, 0] == 180050))
+        ipb.append(np.where(X[:, 0] == 177133))
+        ipb.append(np.where(X[:, 0] == 179219))
+        ipb.append(np.where(X[:, 0] == 177792))
+        ipb.append(np.where(X[:, 0] == 313098))
+        ipb.append(np.where(X[:, 0] == 670271))
+        ipb.append(np.where(X[:, 0] == 640834))
+        ipb.append(np.where(X[:, 0] == 658151))
+        ipb.append(np.where(X[:, 0] == 657909))
+        ipb.append(np.where(X[:, 0] == 255946))
     # this next event has no depth
-    ipb.append(np.where(X[:, 0]==640818))
+    ipb.append(np.where(X[:, 0] == 640818))
     # this next event is rather too deep
-    ipb.append(np.where(X[:, 0]==159405))
+    ipb.append(np.where(X[:, 0] == 159405))
     X = np.delete(X, (ipb), axis=0)
     y = np.delete(y, (ipb), axis=0)
 

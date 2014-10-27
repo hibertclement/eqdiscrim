@@ -158,6 +158,7 @@ def n_stations_per_year(S_start_end, start_year, end_year):
 
     return year_count
 
+
 def GutenbergRichter(magnitudes, mag_min, mag_max, step):
     """
     Computes the Gutenberg-Richter law from a list of magnitudes.
@@ -173,4 +174,4 @@ def GutenbergRichter(magnitudes, mag_min, mag_max, step):
         except RuntimeWarning:
             log10N[i] = 0.0
 
-    return log10N
+    return log10N, mags

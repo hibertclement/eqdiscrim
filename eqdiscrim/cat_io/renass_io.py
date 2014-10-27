@@ -55,14 +55,13 @@ def read_stations_fr():
             stime[i] = datetime(year, month, day, hour, minute, seconds,
                                 microseconds, utc)
         except ValueError:
-            if day==0: 
-                # LDG sometimes uses day 01/00,00:00:00.0 
+            if day == 0:
+                # LDG sometimes uses day 01/00,00:00:00.0
                 day = 1  # fix day to first of january
                 stime[i] = datetime(year, month, day, hour, minute, seconds,
                                     microseconds, utc)
             else:
                 raise
-
 
         # construct end time
         year = np.int(e_date_parts[0])
@@ -76,7 +75,6 @@ def read_stations_fr():
         etime[i] = datetime(year, month, day, hour, minute, seconds,
                             microseconds, utc)
 
-
     # get the basic parameters
     s_tmp = s_pd[names].values
     nst, nd = s_tmp.shape
@@ -88,4 +86,3 @@ def read_stations_fr():
     names.append("ETIME")
 
     return stations, names
-

@@ -2,13 +2,14 @@ import numpy as np
 import matplotlib.pyplot as plt
 from pickle import load, dump
 from cat_io.sihex_io import read_sihex_xls, read_notecto_lst
-from cat_io.renass_io import read_renass, read_stations_fr
+from cat_io.renass_io import read_stations_fr
 from preproc import latlon_to_xy, dist_to_n_closest_stations
 from sklearn.preprocessing import StandardScaler
 from sklearn import cluster
 from graphics.graphics_2D import plot_2D_cluster_scatter
 from graphics.graphics_2D import plot_2D_cluster_scatter_by_epoch
 from graphics.graphics_2D import plot_att_hist_by_label
+from graphics.graphics_2D import plot_GR_by_label
 from dateutil import tz
 
 
@@ -18,7 +19,6 @@ clust_file = 'clusteriser.dat'
 do_clust = False
 
 # read catalogs
-#S_latlon, names_sta = read_renass()
 S_latlon, names_sta = read_stations_fr()
 X_latlon, y, names_latlon = read_sihex_xls(inout=False)
 B_latlon, y, names_latlon = read_notecto_lst()
@@ -73,9 +73,9 @@ S_times = S[:, istart:iend+1]
 
 # plot for sanity
 plt.figure()
-plt.scatter(X_xy[:, 0], X_xy[:,1], color='blue', label='ke')
-plt.scatter(B_xy[:, 0], B_xy[:,1], color='yellow', label='km/sm')
-plt.scatter(S_xy[:, 0], S_xy[:,1], marker='v', color='red', label='station')
+plt.scatter(X_xy[:, 0], X_xy[:, 1], color='blue', label='ke')
+plt.scatter(B_xy[:, 0], B_xy[:, 1], color='yellow', label='km/sm')
+plt.scatter(S_xy[:, 0], S_xy[:, 1], marker='v', color='red', label='station')
 plt.xlabel('Reduced x coordinate')
 plt.ylabel('Reduced y coordinate')
 plt.legend()
@@ -95,7 +95,7 @@ if do_clust:
     clf.fit(d3sta)
 
     # dump clusterer to file
-    f_ = open(clust_file,'w')
+    f_ = open(clust_file, 'w')
     dump(clf, f_)
     f_.close()
 
@@ -122,16 +122,18 @@ plot_2D_cluster_scatter(B_xy, B_labels,
                         'notecto_clusters_dist_to_3_closest_stations.png')
 
 # plot geographic clusters by epoch
-plot_2D_cluster_scatter_by_epoch(X_xy, X_otime, clf.labels_,
-                        ('Reduced x coordinate', 'Reduced y coordinate'),
-                        'clusters_dist_to_3_closest_stations_by_epoch.png')
-plot_2D_cluster_scatter_by_epoch(B_xy, B_otime, B_labels,
-                        ('Reduced x coordinate', 'Reduced y coordinate'),
-                        'notecto_clusters_dist_to_3_closest_stations_by_epoch.png')
+plot_2D_cluster_scatter_by_epoch(
+    X_xy, X_otime, clf.labels_,
+    ('Reduced x coordinate', 'Reduced y coordinate'),
+    'clusters_dist_to_3_closest_stations_by_epoch.png')
+plot_2D_cluster_scatter_by_epoch(
+    B_xy, B_otime, B_labels,
+    ('Reduced x coordinate', 'Reduced y coordinate'),
+    'notecto_clusters_dist_to_3_closest_stations_by_epoch.png')
 
 # plot magnitude as a function of clusters
 nbins = 20
-mag_range=(0, 6)
+mag_range = (0, 6)
 plot_att_hist_by_label(X_m, clf.labels_, mag_range, nbins, 'Mw',
                        'mag_pdf_by_station_cluster.png')
 plot_att_hist_by_label(B_m, B_labels, mag_range, nbins, 'Mw',
@@ -144,3 +146,10 @@ plot_att_hist_by_label(X_hour, clf.labels_, time_range, nbins, 'Local hour',
                        'hour_pdf_by_station_cluster.png')
 plot_att_hist_by_label(B_hour, B_labels, time_range, nbins, 'Local hour',
                        'notecto_hour_pdf_by_station_cluster.png')
+
+# plot GR
+min_mag = np.min(X_m)
+max_mag = np.max(X_m)
+mag_step = 0.1
+plot_GR_by_label(X_m, clf.labels_, min_mag, max_mag, mag_step,
+                 'GR_by_station_cluster.png')

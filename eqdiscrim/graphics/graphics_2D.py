@@ -1,5 +1,6 @@
 import numpy as np
 from os.path import join
+from preproc import GutenbergRichter
 import matplotlib.pyplot as plt
 
 colors = ['blue', 'lime', 'red', 'yellow', 'cyan', 'orange', 'black',
@@ -8,6 +9,7 @@ colors = ['blue', 'lime', 'red', 'yellow', 'cyan', 'orange', 'black',
 epochs = [1970, 1978, 1990]
 
 figdir = '../figures'
+
 
 # plot 2D clusters
 def plot_2D_cluster_scatter(X, labels, at_name, filename):
@@ -31,6 +33,7 @@ def plot_2D_cluster_scatter(X, labels, at_name, filename):
     plt.xlabel(at_name[0])
     plt.ylabel(at_name[1])
     plt.savefig(join(figdir, filename))
+
 
 def plot_2D_cluster_scatter_by_epoch(X, Xt, labels, at_name, filename):
     """
@@ -79,7 +82,7 @@ def plot_2D_cluster_scatter_by_epoch(X, Xt, labels, at_name, filename):
     plt.savefig(join(figdir, filename))
 
 
-def plot_att_hist_by_label(X_d, X_auth, att_range, nbins, att_name, filename):
+def plot_att_hist_by_label(X_d, labels, att_range, nbins, att_name, filename):
     """
     Plots attribute histograms by author
     """
@@ -97,18 +100,54 @@ def plot_att_hist_by_label(X_d, X_auth, att_range, nbins, att_name, filename):
     plt.ylabel('Probability density')
 
     # get unique authors
-    u_auth = np.unique(X_auth)
+    u_auth = np.unique(labels)
     n_auth = len(u_auth)
 
     # plot by author
     plt.sca(axes[1])
     for i in xrange(n_auth):
         author = u_auth[i]
-        d = X_d[:][X_auth == author]
+        d = X_d[:][labels == author]
         n, bins, patches = plt.hist(d, nbins, range=att_range, normed=1,
                                     histtype='step', color=colors[i])
     plt.legend(u_auth, bbox_to_anchor=(1.3, 1.05))
     plt.xlabel(att_name)
     plt.ylabel('Probability density')
+
+    plt.savefig(join(figdir, filename))
+
+
+def plot_GR_by_label(magnitudes, labels, min_mag, max_mag, mag_step, filename):
+    """
+    Plots GR plots by label.
+    """
+
+    # set up plot
+    plt.figure()
+    fig, axes = plt.subplots(1, 2)
+    fig.set_size_inches(10, 5)
+
+    # first plot - all together
+    log10N, mags = GutenbergRichter(magnitudes, min_mag, max_mag, mag_step)
+    plt.sca(axes[0])
+    plt.scatter(mags[0:-1], log10N, c='black')
+    plt.xlabel('Mw')
+    plt.ylabel('log10(N)')
+    plt.title('Gutenberg-Richter')
+
+    # get unique labels
+    u_labels = np.unique(labels)
+    n_labels = len(u_labels)
+
+    # do the second plot
+    plt.sca(axes[1])
+    for i in xrange(n_labels):
+        m_sub = magnitudes[:][labels == u_labels[i]]
+        log10N, mags = GutenbergRichter(m_sub, min_mag, max_mag, mag_step)
+        plt.scatter(mags[0:-1], log10N, color=colors[i], label=u_labels[i])
+    plt.legend(bbox_to_anchor=(1.05, 1.05))
+    plt.xlabel('Mw')
+    plt.ylabel('log10(N)')
+    plt.title('Gutenberg-Richter')
 
     plt.savefig(join(figdir, filename))

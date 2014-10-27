@@ -1,5 +1,4 @@
 import numpy as np
-#import matplotlib.pyplot as plt
 from cat_io.sihex_io import read_sihex_xls
 from preproc import latlon_to_xy
 from sklearn.preprocessing import StandardScaler
@@ -63,18 +62,18 @@ plot_2D_cluster_scatter(X_xy, X_auth,
 
 # plot depth and magnitude as a function of author
 nbins = 20
-depth_range=(-3, 40)
+depth_range = (-3, 40)
 plot_att_hist_by_label(X_d, X_auth, depth_range, nbins, 'Depth (km)',
                        'depth_pdf_by_author.png')
-mag_range=(0, 6)
+mag_range = (0, 6)
 plot_att_hist_by_label(X_m, X_auth, mag_range, nbins, 'Mw',
                        'mag_pdf_by_author.png')
 
 # plot depth and magnitude as a function of cluster
-depth_range=(-3, 40)
+depth_range = (-3, 40)
 plot_att_hist_by_label(X_d, clf.labels_, depth_range, nbins, 'Depth (km)',
                        'depth_pdf_by_cluster.png')
-mag_range=(0, 6)
+mag_range = (0, 6)
 plot_att_hist_by_label(X_m, clf.labels_, mag_range, nbins, 'Mw',
                        'mag_pdf_by_cluster.png')
 
@@ -93,5 +92,3 @@ plot_att_hist_by_label(X_hour, X_auth, time_range, nbins, 'Local hour',
                        'hour_pdf_by_author.png')
 plot_att_hist_by_label(X_hour, clf.labels_, time_range, nbins, 'Local hour',
                        'hour_pdf_by_cluster.png')
-
-
