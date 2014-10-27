@@ -2,6 +2,7 @@ import pandas as pd
 import numpy as np
 from datetime import datetime
 from dateutil import tz
+from shapely.geometry import Polygon, Point
 
 utc = tz.gettz('UTC')
 
@@ -10,15 +11,24 @@ utc = tz.gettz('UTC')
 sihex_xls = '../static_catalogs/SIHEXV2-inout-final.xlsx'
 sihex_txt = '../static_catalogs/SIHEXV2-catalogue-final.txt'
 notecto_lst = '../static_catalogs/no_tecto.lst'
+sihex_bound = '../static_catalogs/line20km.xy.txt'
 
 
 def read_notecto_lst():
 
     # use the same names as for the tectonic events
-    names = list(["ID", "DATE", "HEURE", "LAT", "LON", "PROF", "AUTEUR", "TYPE", "Mw"])
+    names = list(["ID", "DATE", "HEURE", "LAT", "LON", "PROF", "AUTEUR",
+                  "TYPE", "Mw"])
 
     # read the .lst file into pandas data frame
     pd_ev = pd.read_table(notecto_lst, sep='\s+', header=None, names=names)
+
+    # read the shape file
+    sh_names = list(["LON", "LAT"])
+    sh_tmp = pd.read_table(sihex_bound, sep='\s+', header=None, names=sh_names)
+    sh = sh_tmp[sh_names].values
+    sh_tup = zip(sh[:, 0], sh[:, 1])
+    poly = Polygon(sh_tup)
 
     # date-time reading
     DT_names = list(["DATE", "HEURE"])
@@ -58,24 +68,11 @@ def read_notecto_lst():
 
     # PROBLEM WITH EVENTS in the out list : some are not near France
     ipb=[]
-    # these events are no-where near the SiHex boundaries
-    ipb.append(np.where(X[:, 0]==625133))
-    ipb.append(np.where(X[:, 0]==621845))
-    ipb.append(np.where(X[:, 0]==675405))
-    ipb.append(np.where(X[:, 0]==217446))
-    ipb.append(np.where(X[:, 0]==203905))
-    ipb.append(np.where(X[:, 0]==659188))
-    ipb.append(np.where(X[:, 0]==659107))
-    ipb.append(np.where(X[:, 0]==659119))
-    ipb.append(np.where(X[:, 0]==659512))
-    ipb.append(np.where(X[:, 0]==659334))
-    ipb.append(np.where(X[:, 0]==659122))
-    ipb.append(np.where(X[:, 0]==658973))
-    ipb.append(np.where(X[:, 0]==658990))
-    ipb.append(np.where(X[:, 0]==620725))
-    ipb.append(np.where(X[:, 0]==622160))
-    ipb.append(np.where(X[:, 0]==285626))
-    ipb.append(np.where(X[:, 0]==659575))
+    # add all events that are outside the SiHex boundaries
+    for i in xrange(nev):
+        ip = Point(X[i, 3], X[i, 2])  # create a point (lon, lat)
+        if not ip.within(poly):
+            ipb.append(i)
 
     # clean up
     X = np.delete(X, (ipb), axis=0)

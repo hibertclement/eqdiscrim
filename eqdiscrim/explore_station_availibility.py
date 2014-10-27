@@ -47,6 +47,6 @@ plt.xlabel('Year')
 plt.ylabel('Number of stations')
 plt.title('Epochs by station numbers')
 plt.legend(loc='lower right')
-plt.savefig('num_stations_per_year.png')
+plt.savefig('../figures/num_stations_per_year.png')
 
 

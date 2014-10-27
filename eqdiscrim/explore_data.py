@@ -18,7 +18,6 @@ Xlatlon, y, names_latlon = read_sihex_xls()
 nev, natt = Xlatlon.shape
 
 # extract the x and y coordinates
-print Xlatlon.shape, names_latlon
 ilat = 2
 ilon = 3
 X, names = latlon_to_xy(Xlatlon, names_latlon, ilat, ilon)

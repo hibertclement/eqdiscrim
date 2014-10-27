@@ -58,6 +58,8 @@ target/
 
 # figures
 *.png
+figures/
 
 # picled objects
 *.dat
+

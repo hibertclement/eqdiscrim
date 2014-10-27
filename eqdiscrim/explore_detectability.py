@@ -79,7 +79,7 @@ plt.scatter(S_xy[:, 0], S_xy[:,1], marker='v', color='red', label='station')
 plt.xlabel('Reduced x coordinate')
 plt.ylabel('Reduced y coordinate')
 plt.legend()
-plt.savefig('sihex_events_stations.png')
+plt.savefig('../figures/sihex_events_stations.png')
 
 if do_clust:
 

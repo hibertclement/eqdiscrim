@@ -1,10 +1,13 @@
 import numpy as np
+from os.path import join
 import matplotlib.pyplot as plt
 
 colors = ['blue', 'lime', 'red', 'yellow', 'cyan', 'orange', 'black',
           'white', 'purple', 'green', 'grey']
 
 epochs = [1970, 1978, 1990]
+
+figdir = '../figures'
 
 # plot 2D clusters
 def plot_2D_cluster_scatter(X, labels, at_name, filename):
@@ -27,7 +30,7 @@ def plot_2D_cluster_scatter(X, labels, at_name, filename):
     plt.legend(clust_names, bbox_to_anchor=(1.05, 1.05))
     plt.xlabel(at_name[0])
     plt.ylabel(at_name[1])
-    plt.savefig(filename)
+    plt.savefig(join(figdir, filename))
 
 def plot_2D_cluster_scatter_by_epoch(X, Xt, labels, at_name, filename):
     """
@@ -73,7 +76,7 @@ def plot_2D_cluster_scatter_by_epoch(X, Xt, labels, at_name, filename):
         plt.xlabel(at_name[0])
         plt.ylabel(at_name[1])
 
-    plt.savefig(filename)
+    plt.savefig(join(figdir, filename))
 
 
 def plot_att_hist_by_label(X_d, X_auth, att_range, nbins, att_name, filename):
@@ -108,4 +111,4 @@ def plot_att_hist_by_label(X_d, X_auth, att_range, nbins, att_name, filename):
     plt.xlabel(att_name)
     plt.ylabel('Probability density')
 
-    plt.savefig(filename)
+    plt.savefig(join(figdir, filename))
