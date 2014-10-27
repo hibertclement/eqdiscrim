@@ -4,6 +4,8 @@ from datetime import datetime
 from preproc import latlon_to_xy, xy_to_latlon
 from preproc import dist_to_n_closest_stations
 from preproc import n_stations_per_year
+from preproc import GutenbergRichter
+
 
 def suite():
 
@@ -13,6 +15,7 @@ def suite():
     suite.addTest(GeoPreprocTests('test_dist_to_nth_station_pathological'))
     suite.addTest(GeoPreprocTests('test_dist_to_nth_station_timing'))
     suite.addTest(GeoPreprocTests('test_n_stations_per_year'))
+    suite.addTest(GeoPreprocTests('test_GutenbergRichter'))
     return suite
 
 
@@ -133,7 +136,23 @@ class GeoPreprocTests(unittest.TestCase):
 
         self.assertTrue(n_bef_1970 >= year_count[0, 1])
 
+    def test_GutenbergRichter(self):
 
+        # make a uniform distribution as a function of magnitude
+        N0 = 10     # number of events in largest magnitude
+        mags = np.arange(0, 5, 0.1)     # magnitude windows
+        nmags = len(mags)-1
+        Ntmp = (np.arange(nmags)+1)*N0
+        N = Ntmp[::-1]
+        log10N = np.log10(N)
+        magnitudes = np.empty(nmags*N0, dtype=np.float)
+        for i in xrange(nmags):
+            magnitudes[i*N0:(i+1)*N0] = mags[i]+0.01
+
+        # call GR function
+        log10N_GR = GutenbergRichter(magnitudes, 0, 5, 0.1)
+
+        np.testing.assert_array_almost_equal(log10N, log10N_GR, 5)
 
 
 if __name__ == '__main__':

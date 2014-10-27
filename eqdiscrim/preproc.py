@@ -157,3 +157,20 @@ def n_stations_per_year(S_start_end, start_year, end_year):
         year_count[iy, 1] = nsta
 
     return year_count
+
+def GutenbergRichter(magnitudes, mag_min, mag_max, step):
+    """
+    Computes the Gutenberg-Richter law from a list of magnitudes.
+    """
+
+    mags = np.arange(mag_min, mag_max, step)
+    N, mags = np.histogram(magnitudes, mags)
+    nmags = len(N)
+    log10N = np.zeros(nmags, dtype=np.float)
+    for i in xrange(nmags):
+        try:
+            log10N[i] = np.log10(np.sum(N[i:nmags]))
+        except RuntimeWarning:
+            log10N[i] = 0.0
+
+    return log10N
