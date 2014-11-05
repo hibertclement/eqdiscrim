@@ -62,4 +62,4 @@ figures/
 
 # picled objects
 *.dat
-
+*.ipynb
