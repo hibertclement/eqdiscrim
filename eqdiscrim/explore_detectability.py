@@ -121,6 +121,16 @@ plot_att_hist_by_label(X_hour, clf.labels_, time_range, nbins, 'Local hour',
 plot_att_hist_by_label(B_hour, B_labels, time_range, nbins, 'Local hour',
                        'notecto_hour_pdf_by_station_cluster.png')
 
+# plot local weekday as a function of clusters
+X_wd = X[:, iw]
+B_wd = B[:, iw]
+nbins = 7
+time_range = (1, 7)
+plot_att_hist_by_label(X_wd, clf.labels_, time_range, nbins, 'Local weekday',
+                       'weekday_pdf_by_station_cluster.png')
+plot_att_hist_by_label(B_wd, B_labels, time_range, nbins, 'Local weekday',
+                       'notecto_weekday_pdf_by_station_cluster.png')
+
 # plot GR
 min_mag = np.min(X_m)
 max_mag = np.max(X_m)
