@@ -1,0 +1,1 @@
+ID OriginTime X Y Mw LocalHour LocalWeekday DistanceStation1 DistanceStation2 DistanceStation3 Type

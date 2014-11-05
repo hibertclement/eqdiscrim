@@ -3,6 +3,7 @@ import numpy as np
 from datetime import datetime
 from dateutil import tz
 from shapely.geometry import Polygon, Point
+from pickle import load
 
 utc = tz.gettz('UTC')
 
@@ -162,3 +163,25 @@ def read_sihex_xls(inout=True):
     y = np.delete(y, (ipb), axis=0)
 
     return X, y, names
+
+def read_sihex_tidy(table_fname, header_fname):
+    """
+    Reads tidy sihex data and returns both the table and a dictionary
+    containing the header information.
+    """
+
+    f_ = open(table_fname, 'r')
+    X = load(f_)
+    f_.close()
+
+    f_ = open(header_fname, 'r')
+    line = f_.readline()
+    f_.close()
+    names = line.split()
+    Xdict = {}
+    i = 0
+    for name in names:
+        Xdict[name] = i
+        i = i+1
+
+    return X, Xdict
