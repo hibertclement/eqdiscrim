@@ -21,7 +21,6 @@ Hfile = '../static_catalogs/sihex_tidy_header.txt'
 Stable = '../static_catalogs/sihex_tidy_stations.dat'
 SHfile = '../static_catalogs/sihex_tidy_stations_header.txt'
 
-
 # #############
 # read catalogs
 # #############
@@ -87,6 +86,15 @@ itime = 1
 X_otime = X[:, itime]
 B_otime = B[:, itime]
 
+# ##############
+# extract author
+# ##############
+
+print 'Extracting event author...'
+iauth = 6
+X_auth = X[:, iauth]
+B_auth = B[:, iauth]
+
 # ####################################
 # obtain local origin time and weekday
 # ####################################
@@ -124,19 +132,21 @@ B_d3sta = dist_to_n_closest_stations(B_xyt, S_xyt, N_close, timing=True)
 # combining information into a single matrix per type
 # ###################################################
 
-header = "ID OriginTime X Y Mw LocalHour LocalWeekday DistanceStation1 DistanceStation2 DistanceStation3 Type"
+header = "ID OriginTime X Y Mw Author LocalHour LocalWeekday DistanceStation1 DistanceStation2 DistanceStation3 Type"
 sta_header = "Name X Y StartTime EndTime"
 
 print 'Combining into tidy tables...'
 nev, nd = X_xy.shape
 X = np.hstack((X_id.reshape(nev, 1), X_otime.reshape(nev, 1), X_xy,
-               X_m.reshape(nev, 1), X_hour.reshape(nev, 1),
-               X_weekday.reshape(nev, 1), X_d3sta, X_y.reshape(nev, 1)))
+               X_m.reshape(nev, 1), X_auth.reshape(nev, 1),
+               X_hour.reshape(nev, 1), X_weekday.reshape(nev, 1), X_d3sta,
+               X_y.reshape(nev, 1)))
 
 nev, nd = B_xy.shape
 B = np.hstack((B_id.reshape(nev, 1), B_otime.reshape(nev, 1), B_xy,
-               B_m.reshape(nev, 1), B_hour.reshape(nev, 1),
-               B_weekday.reshape(nev, 1), B_d3sta, B_y.reshape(nev, 1)))
+               B_m.reshape(nev, 1), B_auth.reshape(nev, 1),
+               B_hour.reshape(nev, 1), B_weekday.reshape(nev, 1), B_d3sta,
+               B_y.reshape(nev, 1)))
 
 A = np.vstack((X, B))
 
