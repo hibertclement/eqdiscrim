@@ -33,6 +33,7 @@ def plot_2D_cluster_scatter(X, labels, at_name, filename):
     plt.xlabel(at_name[0])
     plt.ylabel(at_name[1])
     plt.savefig(join(figdir, filename))
+    plt.close()
 
 
 def plot_2D_cluster_scatter_by_epoch(X, Xt, labels, at_name, filename):
@@ -80,6 +81,7 @@ def plot_2D_cluster_scatter_by_epoch(X, Xt, labels, at_name, filename):
         plt.ylabel(at_name[1])
 
     plt.savefig(join(figdir, filename))
+    plt.close()
 
 
 def plot_att_hist_by_label(X_d, labels, att_range, nbins, att_name, filename):
@@ -115,6 +117,7 @@ def plot_att_hist_by_label(X_d, labels, att_range, nbins, att_name, filename):
     plt.ylabel('Probability density')
 
     plt.savefig(join(figdir, filename))
+    plt.close()
 
 
 def plot_GR_by_label(magnitudes, labels, min_mag, max_mag, mag_step, filename):
@@ -151,3 +154,4 @@ def plot_GR_by_label(magnitudes, labels, min_mag, max_mag, mag_step, filename):
     plt.title('Gutenberg-Richter')
 
     plt.savefig(join(figdir, filename))
+    plt.close()
