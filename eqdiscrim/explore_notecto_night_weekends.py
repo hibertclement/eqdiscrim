@@ -1,6 +1,8 @@
-import matplotlib.image as mpimg
-import matplotlib.pyplot as plt
 import numpy as np
+from cat_io.sihex_io import read_sihex_tidy
+from graphics.graphics_2D import plot_pie_comparison, plot_bar_stacked
+from graphics.graphics_2D import plot_2D_cluster_scatter
+from graphics.graphics_2D import plot_2D_cluster_scatter_by_epoch
 
 
 # ## Exploring non-tectonic events that occur at night or at the weekends
@@ -15,63 +17,108 @@ import numpy as np
 # extracted from the full catalogs. For now, let's just see what types they
 # have...
 
-from cat_io.sihex_io import read_sihex_tidy
+
 Btable = '../static_catalogs/sihex_tidy_blasts.dat'
 Hfile = '../static_catalogs/sihex_tidy_header.txt'
 
+print "Extracting night and weekend events..."
 B, coldict = read_sihex_tidy(Btable, Hfile)
 B_hour = B[:, coldict['LocalHour']]
 B_weekday = B[:, coldict['LocalWeekday']]
 B_night = B[:, :][(B_hour < 8) | (B_hour > 18)]
 B_weekend = B[:, :][B_weekday > 5]
 
-
+# get some simple statistics
 nev, nd = B.shape
 nev_night, nd = B_night.shape
 nev_weekend, nd = B_weekend.shape
-print "Of %d non-tectonic events, %d (i.e. %.2f%%) occur at night and %d (i.e. %.2f%%) occur at weekends." %  (nev, nev_night, nev_night/np.float(nev) * 100, nev_weekend, nev_weekend/np.float(nev) *100 )
 
+# lump night and weekend events together for the following anaysis
+nw_ids = np.union1d(B_night[:, coldict['ID']], B_weekend[:, coldict['ID']])
+n_nw = len(nw_ids)
+print\
+"%d (i.e. %.2f%%) non-tectonic events occur during the night or at weekends."\
+    % (n_nw, n_nw/np.float(nev)*100)
 
-# In[107]:
+# get the night and weekend event from ids
+B_night_weekend = np.empty((n_nw, nd), dtype=object)
+for i in xrange(n_nw):
+    B_night_weekend[i, :] = B[:, :][B[:, coldict['ID']] == nw_ids[i]]
 
-#common_ids = np.intersect1d(B_night[:, coldict['ID']], B_weekend[:, coldict['ID']])
-common_ids = np.union1d(B_night[:, coldict['ID']], B_weekend[:, coldict['ID']])
-n_common = len(common_ids)
-print "%d (i.e. %.2f%%) of non-tectonic events occur during the night or at weekends." %    (n_common, n_common/np.float(nev)*100)
-# get the common events
-B_night_weekend = np.empty((n_common, nd), dtype=object)
-for i in xrange(n_common):
-    B_night_weekend[i, :] = B[:, :][B[:, coldict['ID']] == common_ids[i]]
-
+print "Computing the frequencies..."
+# count the type frequencies for all the non-tectonics and also only those
+# that occur at night and at weekends
 all_types = np.unique(B[:, coldict['Type']])
 n_types = {}
 n_types_night_weekend = {}
+n_types_workday = {}
 for t in all_types:
-    n_types_night_weekend[t] = np.sum([B_night_weekend[:, coldict['Type']] == t])
+    n_types_night_weekend[t] =\
+        np.sum([B_night_weekend[:, coldict['Type']] == t])
     n_types[t] = np.sum([B[:, coldict['Type']] == t])
+    n_types_workday[t] = n_types[t] - n_types_night_weekend[t]
+
+# print information 
+print 'Types', n_types.keys()
+print 'All', n_types.values()
+print 'Workday', n_types_workday.values()
+print 'Night or weekend', n_types_night_weekend.values()
+
+keys = ["km", "sm", "me", "kr", "sr", "ki", "si", "uk"]
+nk = len(keys)
+workday = np.empty(nk, dtype=np.float)
+night_weekend = np.empty(nk, dtype=np.float)
+for i in xrange(nk):
+    workday[i] = n_types_workday[keys[i]]
+    night_weekend[i] = n_types_night_weekend[keys[i]]
+
+print "Plotting the frequencies..."
+plot_pie_comparison(keys, workday, 'Workday (%d)' % (nev-n_nw),
+                    keys, night_weekend, 'Night or weekend (%d)' %
+                    n_nw, 'notecto_type_pie_comparison.png')
+
+plot_bar_stacked(keys, workday, night_weekend, 'Workday', 'Night or weekend',
+                 'Number of events', 'Non-tectonic event types',
+                 'notecto_type_bar_chart.png', hline=60/float(24*7))
 
 
-# In[109]:
+print "Plotting the scatter plots..."
+B_xy = B[:, [coldict['X'], coldict['Y']]]
+plot_2D_cluster_scatter(B_xy, B[:, coldict['Type']],
+                        ['Reduced x coordinate', 'Reduced y coordinate'],
+                        'notecto_type_scatterplot.png')
+plot_2D_cluster_scatter_by_epoch(B_xy, B[:, coldict['OriginTime']],
+                        B[:, coldict['Type']],
+                        ['Reduced x coordinate', 'Reduced y coordinate'],
+                        'notecto_type_scatterplot_by_epoch.png')
+B_km = B[:, :][B[:, coldict['Type']] == 'km']
+B_sm = B[:, :][B[:, coldict['Type']] == 'sm']
+B_me = B[:, :][B[:, coldict['Type']] == 'me']
+B_kr = B[:, :][B[:, coldict['Type']] == 'kr']
+B_sr = B[:, :][B[:, coldict['Type']] == 'sr']
+B_ki = B[:, :][B[:, coldict['Type']] == 'ki']
+B_si = B[:, :][B[:, coldict['Type']] == 'si']
+B_uk = B[:, :][B[:, coldict['Type']] == 'uk']
 
-labels = n_types.keys()
-values = n_types.values()
-labels_night_weekend = n_types_night_weekend.keys()
-values_night_weekend = n_types_night_weekend.values()
-plt.figure()
-fig, axes = plt.subplots(1, 2)
-fig.set_size_inches(10, 5)
-plt.sca(axes[0])
-plt.pie(values, labels=labels, autopct='%d%%')
-plt.title('All non-tectonic events')
-plt.sca(axes[1])
-plt.pie(values_night_weekend, labels=labels_night_weekend, autopct='%d%%')
-plt.title('Night or weekend non-tectonic events')
-plt.show()
+B_ksm = np.vstack((B_km, B_sm, B_me))
+B_ksri = np.vstack((B_kr, B_sr, B_ki, B_si))
 
-n_types_night_weekend
+plot_2D_cluster_scatter(B_ksm[:, [coldict['X'], coldict['Y']]],
+                        B_ksm[:, coldict['Type']],
+                        ['Reduced x coordinate', 'Reduced y coordinate'],
+                        'notecto_kmsmme_scatterplot.png')
+plot_2D_cluster_scatter_by_epoch(B_ksm[:, [coldict['X'], coldict['Y']]],
+                        B_ksm[:, coldict['OriginTime']],
+                        B_ksm[:, coldict['Type']],
+                        ['Reduced x coordinate', 'Reduced y coordinate'],
+                        'notecto_kmsmme_scatterplot_by_epoch.png')
 
-
-# In[110]:
-
-
-
+plot_2D_cluster_scatter(B_ksri[:, [coldict['X'], coldict['Y']]],
+                        B_ksri[:, coldict['Type']],
+                        ['Reduced x coordinate', 'Reduced y coordinate'],
+                        'notecto_krsrkisi_scatterplot.png')
+plot_2D_cluster_scatter_by_epoch(B_ksri[:, [coldict['X'], coldict['Y']]],
+                        B_ksri[:, coldict['OriginTime']],
+                        B_ksri[:, coldict['Type']],
+                        ['Reduced x coordinate', 'Reduced y coordinate'],
+                        'notecto_krsrkisi_scatterplot_by_epoch.png')
