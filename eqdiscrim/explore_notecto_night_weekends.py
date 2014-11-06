@@ -3,6 +3,7 @@ from cat_io.sihex_io import read_sihex_tidy
 from graphics.graphics_2D import plot_pie_comparison, plot_bar_stacked
 from graphics.graphics_2D import plot_2D_cluster_scatter
 from graphics.graphics_2D import plot_2D_cluster_scatter_by_epoch
+from graphics.graphics_2D import plot_att_hist_by_label
 
 
 # ## Exploring non-tectonic events that occur at night or at the weekends
@@ -122,3 +123,18 @@ plot_2D_cluster_scatter_by_epoch(B_ksri[:, [coldict['X'], coldict['Y']]],
                         B_ksri[:, coldict['Type']],
                         ['Reduced x coordinate', 'Reduced y coordinate'],
                         'notecto_krsrkisi_scatterplot_by_epoch.png')
+
+print "Plotting the histograms as a function of type..."
+B_hour = B[:, coldict['LocalHour']]
+nbins = 24
+time_range = (0, 23)
+plot_att_hist_by_label(B_hour, B[:, coldict['Type']], time_range, nbins,
+                       'Local hour', 'notecto_hour_pdf_by_type.png')
+
+# plot local weekday as a function of clusters
+B_wd = B[:, coldict['LocalWeekday']]
+nbins = 7
+time_range = (1, 7)
+plot_att_hist_by_label(B_wd, B[:, coldict['Type']], time_range, nbins, 
+                       'Local weekday', 'notecto_weekday_pdf_by_type.png')
+
