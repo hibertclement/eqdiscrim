@@ -1,49 +1,32 @@
 import numpy as np
-from cat_io.sihex_io import read_sihex_xls
-from preproc import latlon_to_xy
-from sklearn.preprocessing import StandardScaler
+from cat_io.sihex_io import read_sihex_tidy
 from sklearn import cluster
 from graphics.graphics_2D import plot_2D_cluster_scatter
 from graphics.graphics_2D import plot_att_hist_by_label
 from dateutil import tz
 
-
-to_zone = tz.gettz('Europe/Paris')
-
+Xtable = '../static_catalogs/sihex_tidy_earthquakes.dat'
+Hfile = '../static_catalogs/sihex_tidy_header.txt'
 
 # read catalog
-Xlatlon, y, names_latlon = read_sihex_xls()
+X, coldict = read_sihex_tidy(Xtable, Hfile)
 
-nev, natt = Xlatlon.shape
+# get indexes
+ix = coldict['X']
+iy = coldict['Y']
+ia = coldict['Author']
+im = coldict['Mw']
+ih = coldict['LocalHour']
+it = coldict['OriginTime']
 
-# extract the x and y coordinates
-ilat = 2
-ilon = 3
-X, names = latlon_to_xy(Xlatlon, names_latlon, ilat, ilon)
-X_xy = X[:, [ilon, ilat]]
-
-# extract the depth
-idepth = 4
-X_d = X[:, idepth]
-
-# extract the magnitude
-imag = 5
-X_m = X[:, imag]
-
-# extract authors
-iauth = 6
-X_auth = X[:, iauth]
-
-# extract local time
-i_time = 1
-X_loctime = np.array([t.astimezone(to_zone) for t in X[:, i_time]])
-
-
-# scale geographical coordinates
-scaler = StandardScaler().fit(X_xy)
-X_xy = scaler.transform(X_xy)
-X_year = np.array([t.year for t in X_loctime])
-X_hour = np.array([t.hour for t in X_loctime])
+# extract info
+X_xy = X[:, [ix, iy]]
+X_auth = X[:, ia]
+X_m = X[:, im]
+X_hour = X[:, ih]
+X_otime = X[:, it]
+nev = len(X_otime)
+X_year = np.array([otime.year for otime in X_otime])
 
 
 # create a cluster-izer
@@ -60,19 +43,13 @@ plot_2D_cluster_scatter(X_xy, X_auth,
                         ('Reduced x coordinate', 'Reduced y coorindate'),
                         'clusters_by_author.png')
 
-# plot depth and magnitude as a function of author
+# plot magnitude as a function of author
 nbins = 20
-depth_range = (-3, 40)
-plot_att_hist_by_label(X_d, X_auth, depth_range, nbins, 'Depth (km)',
-                       'depth_pdf_by_author.png')
 mag_range = (0, 6)
 plot_att_hist_by_label(X_m, X_auth, mag_range, nbins, 'Mw',
                        'mag_pdf_by_author.png')
 
-# plot depth and magnitude as a function of cluster
-depth_range = (-3, 40)
-plot_att_hist_by_label(X_d, clf.labels_, depth_range, nbins, 'Depth (km)',
-                       'depth_pdf_by_cluster.png')
+# plot magnitude as a function of cluster
 mag_range = (0, 6)
 plot_att_hist_by_label(X_m, clf.labels_, mag_range, nbins, 'Mw',
                        'mag_pdf_by_cluster.png')
