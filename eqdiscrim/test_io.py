@@ -61,7 +61,7 @@ class IoReadTests(unittest.TestCase):
         X, y, names = read_notecto_lst()
 
         nev, natt = X.shape
-        self.assertEqual(nev, 16654)
+        self.assertEqual(nev, 16640)
         self.assertEqual(natt, 7)
         self.assertEqual(y[0], 'sm')
         self.assertEqual(names[1], 'OTIME')

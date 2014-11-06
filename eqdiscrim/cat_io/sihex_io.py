@@ -69,10 +69,14 @@ def read_notecto_lst():
 
     # PROBLEM WITH EVENTS in the out list : some are not near France
     ipb = []
-    # add all events that are outside the SiHex boundaries
     for i in xrange(nev):
+        # add all events that are outside the SiHex boundaries
         ip = Point(X[i, 3], X[i, 2])  # create a point (lon, lat)
         if not ip.within(poly):
+            ipb.append(i)
+        # add events that are classed in non-standard classes
+        # this removes 14 events
+        elif y[i]=='0' or y[i]=='ls' or y[i]=='fe':
             ipb.append(i)
 
     # clean up
