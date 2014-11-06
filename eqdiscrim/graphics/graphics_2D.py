@@ -3,8 +3,8 @@ from os.path import join
 from preproc import GutenbergRichter
 import matplotlib.pyplot as plt
 
-colors = ['blue', 'lime', 'red', 'yellow', 'cyan', 'orange', 'black',
-          'white', 'purple', 'green', 'grey']
+colors = ['blue', 'lime', 'red', 'yellow', 'cyan', 'orange',
+          'white', 'purple', 'green', 'grey', 'magenta']
 
 epochs = [1970, 1978, 1990]
 
@@ -28,8 +28,9 @@ def plot_2D_cluster_scatter(X, labels, at_name, filename):
         cname = clust_names[i]
         x = X[:, 0][labels == cname]
         y = X[:, 1][labels == cname]
-        plt.scatter(x, y, c=colors[i])
-    plt.legend(clust_names, bbox_to_anchor=(1.05, 1.05))
+        plt.scatter(x, y, c=colors[i], label=cname)
+    plt.legend(bbox_to_anchor=(1.05, 1.05))
+    # plt.legend(loc='upper left')
     plt.xlabel(at_name[0])
     plt.ylabel(at_name[1])
     plt.savefig(join(figdir, filename))
@@ -75,8 +76,10 @@ def plot_2D_cluster_scatter_by_epoch(X, Xt, labels, at_name, filename):
                 y = X[:, 1][(labels == cname) & (years >= epochs[ie-1]) &
                             (years < epochs[ie])]
                 plt.title('%d - %d' % (epochs[ie-1], epochs[ie]))
-            plt.scatter(x, y, c=colors[i])
-        plt.legend(clust_names, bbox_to_anchor=(1.05, 1.05))
+            if len(x) > 0:
+                plt.scatter(x, y, c=colors[i], label=cname)
+        plt.legend(bbox_to_anchor=(1.05, 1.05))
+        # plt.legend(loc='upper left')
         plt.xlabel(at_name[0])
         plt.ylabel(at_name[1])
 
@@ -152,6 +155,68 @@ def plot_GR_by_label(magnitudes, labels, min_mag, max_mag, mag_step, filename):
     plt.xlabel('Mw')
     plt.ylabel('log10(N)')
     plt.title('Gutenberg-Richter')
+
+    plt.savefig(join(figdir, filename))
+    plt.close()
+
+
+def plot_pie_comparison(labels1, values1, title1, labels2, values2, title2,
+    filename):
+    """
+    Plots two pie charts in comparison
+    """
+
+    explode1 = np.ones(len(values1))*0.1
+    explode2 = np.ones(len(values2))*0.1
+    fig, axes = plt.subplots(1, 2)
+    fig.set_size_inches(12, 5)
+    plt.sca(axes[0])
+    plt.pie(values1, labels=labels1, autopct='%.1f%%', explode=explode1,
+        colors=colors)
+    plt.title(title1)
+    plt.sca(axes[1])
+    plt.pie(values2, labels=labels2, autopct='%.1f%%', explode=explode2,
+        colors=colors)
+    plt.title(title2)
+
+    plt.savefig(join(figdir, filename))
+    plt.close()
+
+
+def plot_bar_stacked(labels, values1, values2, label1, label2, ylabel, title,
+                     filename, hline=None):
+    """
+    Plots a bar graph with values1 and values2 stacked.
+    """
+
+    N = len(labels)
+    ind = np.arange(N)  # the x locations for the bars
+    width = 0.55
+
+    fig, axes = plt.subplots(1, 2)
+    fig.set_size_inches(12, 5)
+    plt.sca(axes[0])
+
+    # plot values
+    p1 = plt.bar(ind, values1, width, color='blue')
+    p2 = plt.bar(ind, values2, width, color='red', bottom=values1)
+    plt.ylabel(ylabel)
+    plt.title(title)
+    plt.xticks(ind+width/2., labels)
+    plt.legend((p1[0], p2[0]), (label1, label2))
+
+    # plot fraction
+    plt.sca(axes[1])
+    f1 = values1/(values1+values2)
+    f2 = values2/(values1+values2)
+    p1 = plt.bar(ind, f1, width, color='blue')
+    p2 = plt.bar(ind, f2, width, color='red', bottom=f1)
+    plt.ylabel('Fraction')
+    plt.title(title)
+    plt.xticks(ind+width/2., labels)
+    if hline is not None:
+        plt.axhline(hline, color='k', lw=2)
+    #plt.legend((p1[0], p2[0]), (label1, label2))
 
     plt.savefig(join(figdir, filename))
     plt.close()
