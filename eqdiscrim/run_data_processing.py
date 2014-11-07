@@ -8,6 +8,7 @@ from sklearn.preprocessing import StandardScaler
 from cat_io.sihex_io import read_sihex_xls, read_notecto_lst
 from cat_io.renass_io import read_stations_fr
 from preproc import latlon_to_xy, dist_to_n_closest_stations
+from preproc import toHourFraction, toWeekdayFraction
 
 
 to_zone = tz.gettz('Europe/Paris')
@@ -101,10 +102,10 @@ B_auth = B[:, iauth]
 
 print 'Extracting local hour and weekday...'
 X_loctime = np.array([t.astimezone(to_zone) for t in X[:, itime]])
-X_hour = np.array([t.hour for t in X_loctime])
+X_hour = np.array([toHourFraction(t) for t in X_loctime])
 X_weekday = np.array([t.isoweekday() for t in X_loctime])
 B_loctime = np.array([t.astimezone(to_zone) for t in B[:, itime]])
-B_hour = np.array([t.hour for t in B_loctime])
+B_hour = np.array([toHourFraction(t) for t in B_loctime])
 B_weekday = np.array([t.isoweekday() for t in B_loctime])
 
 # ###########################################

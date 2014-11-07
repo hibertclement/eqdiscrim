@@ -175,3 +175,25 @@ def GutenbergRichter(magnitudes, mag_min, mag_max, step):
             log10N[i] = 0.0
 
     return log10N, mags
+
+
+def toHourFraction(date):
+    """
+    Computes fractional hours
+    """
+
+    s = date.minute*60. + date.second + date.microsecond/1.e6
+    hour_fraction = s / 3600.
+
+    return date.hour + hour_fraction
+
+
+def toWeekdayFraction(date):
+    """
+    Computes fractional weekday
+    """
+
+    s = date.hour*3600. + date.minute*60. + date.second + date.microsecond/1.e6
+    day_fraction = s / (3600.*24.)
+
+    return date.isoweekday() + day_fraction
