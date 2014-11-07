@@ -63,3 +63,10 @@ figures/
 # picled objects
 *.dat
 *.ipynb
+
+# latex
+*.aux
+*.pdf
+*.gz
+*.log
+*.toc
