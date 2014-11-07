@@ -4,7 +4,7 @@ from preproc import GutenbergRichter
 import matplotlib.pyplot as plt
 
 colors = ['blue', 'lime', 'red', 'yellow', 'cyan', 'orange',
-          'white', 'purple', 'green', 'grey', 'magenta']
+          'grey', 'purple', 'green', 'white', 'magenta']
 
 epochs = [1970, 1978, 1990]
 
@@ -87,7 +87,8 @@ def plot_2D_cluster_scatter_by_epoch(X, Xt, labels, at_name, filename):
     plt.close()
 
 
-def plot_att_hist_by_label(X_d, labels, att_range, nbins, att_name, filename):
+def plot_att_hist_by_label(X_d, labels, att_range, nbins, att_name, filename,
+    hline=None):
     """
     Plots attribute histograms by author
     """
@@ -103,6 +104,8 @@ def plot_att_hist_by_label(X_d, labels, att_range, nbins, att_name, filename):
                                 histtype='step', color='black')
     plt.xlabel(att_name)
     plt.ylabel('Probability density')
+    if hline is not None:
+        plt.axhline(hline, lw=2, color='k')
 
     # get unique authors
     u_auth = np.unique(labels)
@@ -118,9 +121,66 @@ def plot_att_hist_by_label(X_d, labels, att_range, nbins, att_name, filename):
     plt.legend(u_auth, bbox_to_anchor=(1.3, 1.05))
     plt.xlabel(att_name)
     plt.ylabel('Probability density')
+    if hline is not None:
+        plt.axhline(hline, lw=2, color='k')
 
     plt.savefig(join(figdir, filename))
     plt.close()
+
+
+def plot_att_hist_by_label_deconv(X_d1, X_d2, labels1, labels2, att_range,
+                                  nbins, att_name, filename, hline=None):
+    """
+    Plots attribute histograms by label (dividing X_d1 by X_d2).
+    """
+
+    # set up plot
+    plt.figure()
+    fig, axes = plt.subplots(1, 2)
+    fig.set_size_inches(10, 5)
+
+    # first plot - all together
+    plt.sca(axes[0])
+    pdf1, bins = np.histogram(X_d1, nbins, range=att_range, density=1)
+    pdf2, bins = np.histogram(X_d2, nbins, range=att_range, density=1)
+    if hline is not None:
+        pdf = pdf1/pdf2*hline
+    else:
+        pdf = pdf1/pdf2
+    width = bins[1]-bins[0]
+    center = (bins[:-1]+bins[1:]) / 2.
+    plt.bar(center, pdf, align='center', width=width, fc='none', ec='k')
+    plt.xlabel(att_name)
+    plt.ylabel('Probability density')
+    if hline is not None:
+        plt.axhline(hline, lw=2, color='k')
+
+    # get unique authors
+    u_auth = np.unique(labels1)
+    n_auth = len(u_auth)
+
+    # plot by author
+    plt.sca(axes[1])
+    for i in xrange(n_auth):
+        author = u_auth[i]
+        d1 = X_d1[:][labels1 == author]
+        d2 = X_d2[:][labels2 == author]
+        pdf1, bins = np.histogram(d1, nbins, range=att_range, density=1)
+        pdf2, bins = np.histogram(d2, nbins, range=att_range, density=1)
+        if hline is not None:
+            pdf = pdf1/pdf2*hline
+        else:
+            pdf = pdf1/pdf2
+        plt.bar(center, pdf, align='center', width=width, fc='none', ec=colors[i])
+    plt.legend(u_auth, bbox_to_anchor=(1.3, 1.05))
+    plt.xlabel(att_name)
+    plt.ylabel('Probability density')
+    if hline is not None:
+        plt.axhline(hline, lw=2, color='k')
+
+    plt.savefig(join(figdir, filename))
+    plt.close()
+
 
 
 def plot_GR_by_label(magnitudes, labels, min_mag, max_mag, mag_step, filename):
