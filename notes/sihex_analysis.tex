@@ -43,7 +43,13 @@ described above.
 \item[Author] The organization that provided the preferred epicentral location
 for the event. The possible values are:
 \begin{itemize}
+\item GRN = 
 \item LDG = Laboratoire de Detection Géophysique (CEA)
+\item LPG = 
+\item OCA = Observatoire de la Côte Azur
+\item OMP = Observatoire Midi Pyrénées
+\item Si-Hex = Relocalisation dans un modèle 1D homogène sur toute la France
+métropolitaine faite par le projet Si-Hex.
 \item continue here
 \end{itemize}
 \item[LocalHour] The local (i.e. not UTC) hour of the day corresponding to the
@@ -255,4 +261,137 @@ of the week, as a function of event type.}
 
 If we analyse the two families and the rockbursts in terms of their local time
 of day and day of week distributions, we obtain Figs.~\ref{fg:notecto_hour}
-and~\ref{fg:notecto_day}.
+and~\ref{fg:notecto_day}. Events in the anthropogenic family occur mainly
+during working hours and not at weekends, as we would expect. Those in the
+uniform family occur more or less uniformly over time and day of the week.
+Events in the rockburst category exhibit a combination of the behaviours: the
+local hour probability density function ressembles that of the uniform family,
+while the day of the week curve ressembles that of the anthropogenic family.
+Should we use our LocalHour and LocalWeekday attributes to discriminate between
+tectonic and non-tectonic earthquakes, we would expect significant confusion
+between the tectonic events and the uniform non-tectonic family.
+
+The anthropogenic family of events seems to show a significant peak in its
+probability density around noon-time. It is likely that the detectability of
+these events should be similar to those of natural earthquakes, which also
+improves around noon (especially for the cluster of events with the smallest
+station distances). We can write the following expressions for the probability
+densities of observed earthquakes (eq) and blasts (bl) given the local time
+$h$:
+\begin{align}
+p({\rm eq_{obs}}|h) &= p({\rm eq}|h)\ p(d|h),\\
+p({\rm bl_{obs}}|h) &= p({\rm bl}|h)\ p(d|h)
+\end{align}
+where $d$ indicates a detection. If we assume the probability density of
+earthquakes to be uniform over $h$, i.e. $p({\rm eq}|h)=p_0$, then the
+probability density of blasts over $h$ is given by:
+\begin{align}
+p({\rm bl}|h) &= \frac{p({\rm bl_{obs}}|h)}{p({\rm eq_{obs}}|h)}\ p_0. \label{eq:blast_prob}
+\end{align}
+If we apply equation~(\ref{eq:blast_prob}) to the probability densities over
+local hour for the anthropogenic family of events (the largest family), we
+obtain the probability density curves in Fig.~\ref{fg:ant_prob} as a function
+of cluster. The curves are more self-similar as a function of cluster than the
+raw probability densities of observation shown in Fig.~\ref{fg:ant_obs_prob},
+indicating that most if not all of the large peak in observed occurrence of
+anthropogenic events at noon-time may be caused by the detectability effect.
+
+\begin{figure}
+\centering
+\begin{subfigure}[t]{0.75\textwidth}
+	\centering
+	\includegraphics[width=\textwidth]{../figures/notecto_ant_hour_pdf_by_type}
+	\caption{Anthropogenic family of SiHex non-tectonic events (km, sm, se).}
+	\label{fg:notecto_hour_ant}
+\end{subfigure}
+~
+\begin{subfigure}[t]{0.75\textwidth}
+	\centering
+	\includegraphics[width=\textwidth]{../figures/notecto_uni_hour_pdf_by_type}
+	\caption{Uniform family of SiHex non-tectonic events (ki, si, uk).}
+	\label{fg:notecto_hour_uni}
+\end{subfigure}
+~
+\begin{subfigure}[t]{0.75\textwidth}
+	\centering
+	\includegraphics[width=\textwidth]{../figures/notecto_rok_hour_pdf_by_type}
+	\caption{Rockburst SiHex non-tectonic events (kr, sr).}
+	\label{fg:notecto_hour_rok}
+\end{subfigure}
+\caption{Probability density function of local hour for the Sihex non-tectonic
+events, as a function of event family.  The thick horizontal black line
+indicates the probability density value for a uniform distribution.  The right
+pannel shows the break-down by event type.}
+\label{fg:notecto_hour}
+\end{figure}
+
+\begin{figure}
+\centering
+\begin{subfigure}[t]{0.75\textwidth}
+	\centering
+	\includegraphics[width=\textwidth]{../figures/notecto_ant_weekday_pdf_by_type}
+	\caption{Anthropogenic family of SiHex non-tectonic events (km, sm, se).}
+	\label{fg:notecto_day_ant}
+\end{subfigure}
+~
+\begin{subfigure}[t]{0.75\textwidth}
+	\centering
+	\includegraphics[width=\textwidth]{../figures/notecto_uni_weekday_pdf_by_type}
+	\caption{Uniform family of SiHex non-tectonic events (ki, si, uk).}
+	\label{fg:notecto_day_uni}
+\end{subfigure}
+~
+\begin{subfigure}[t]{0.75\textwidth}
+	\centering
+	\includegraphics[width=\textwidth]{../figures/notecto_rok_weekday_pdf_by_type}
+	\caption{Rockburst SiHex non-tectonic events (kr, sr).}
+	\label{fg:notecto_day_rok}
+\end{subfigure}
+\caption{Probability density function of local day of the week for the Sihex
+non-tectonic events, as a function of event family.  The thick horizontal black
+line indicates the probability density value for a uniform distribution.  The
+right pannel shows the break-down by event type.}
+\label{fg:notecto_day}
+\end{figure}
+
+\begin{figure}
+\centering
+\begin{subfigure}[t]{\textwidth}
+	\centering
+	\includegraphics[width=\textwidth]{../figures/notecto_ant_hour_pdf_by_station_cluster}
+	\caption{Probability density of observation of antropogenic family of
+	SiHex non-tectonic events (km, sm, me).}
+	\label{fg:ant_obs_prob}
+\end{subfigure}
+~
+\begin{subfigure}[t]{\textwidth}
+	\centering
+	\includegraphics[width=\textwidth]{../figures/notecto_ant_hour_pdf_by_station_cluster_deconv}
+	\caption{Probability density of occurrence of antropogenic family of
+	SiHex non-tectonic events (km, sm, me).}
+	\label{fg:ant_prob}
+\end{subfigure}
+\caption{Probability density function of observation and occurrence of non-tectonic anthropogenic events (km, sm and me).
+non-tectonic events, as a function of event family.  The thick horizontal black
+line indicates the probability density value for a uniform distribution.  The
+right pannel shows the break-down by cluster.}
+\label{fg:blast_prob}
+\end{figure}
+
+\section{Conclusions and consequences for discrimination}
+From the above exploratory analysis we can offer the following conclusions and
+suggestions for the discrimination between natural and non-tectonic events
+using the parametric data available in the SiHex catalog:
+\begin{enumerate}
+\item Training should be performed within each cluster, where the clusters are
+defined based on the distance of each event to the three closest stations. The
+cluster will determine both the magnitude range of recorded events and the
+time-variation of their detectability.
+\item If using LocalHour and LocalWeekday attributes for training, the 8
+non-tectonic event types should probably be grouped into 3 families: the
+anthropogenic events (km, sm and me), the uniformly distributed events (ki, si
+and uk) and the rockbursts.
+\item if using only LocalHour and LocalWeekday for discrimination, we expect to
+find significant confusion between the natural and uniformly distributed
+non-tectonic events.
+\end{enumerate}
