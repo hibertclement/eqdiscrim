@@ -1,3 +1,258 @@
 The first step in any discrimination study is to know and understand your
 data. So here are some analyses of the SiHex catalogue, which we shall use to
 train our seismic event discriminator.
+
+\section{The SiHex catalog}
+{\bf Short summary of the SiHex project and description of the preferential
+location catalogue. Mention the fact that much work was done on homogenizing
+the magnitudes to Mw, but that many depths are incorrect due to the 1D velocity
+model used. Cite the SiHex papers, the report and the annex to the report.}
+
+The version of the SiHex catalog used for the earthquake part of the study is
+the publicly available one (cite source). It contains tectonic earthquakes
+within the SiHex zone (i.e. the French economic zone + 20 km). We use all the
+earthquakes in the catalog except two: event 640818 which has no associated
+depth, and 159405 whose depth is inconsistent with the tectonics of
+metropolitain France (125km).  
+The catalog of non-tectonic events comes from the research-only catalog, more
+precisely from an extraction made by Sophie Merer from the SiHex database.
+{\bf At a future date, the analysis here will have to be redone using the SiHex
+database that will be housed at EOST, and I'll be able to document exactly the
+extraction process.} We only use the events that occur within the SiHex zone,
+and remove 14 events whose event-type is non-standard (see standard list
+below).  The catalog of stations comes from an extraction that Sophie Lambotte
+did on the RéNaSS catalog. The start and end dates correspond to the first and
+last arrival time pick available in the database. We use all the available
+stations.
+
+The two event catalogs are parsed to create tidy tables with the following
+columns :
+\begin{description}
+\item[ID] A unique integer identifier for each event. It corresponds to the
+identifier of the event in the SiHex database.
+\item[OriginTime] The UTC origin time of the event.
+\item[X] The x-coordinate of the event in a reduced-coordinate system. To
+obtain the reduced-coordinate system, the latitude and longitude of each event
+is first tranformed into UTM $x$ and $y$ coordinates using the WGS84 elipsoid
+and the UTM reference zone number 31. Then the coordinates of all the tectonic
+earthquakes in the SiHex zone are scaled using a {\tt StandardScaler} from
+{scikit-learn}.
+\item[Y] The y-coordinate of the event in the reduced-coordinate system
+described above.
+\item[Mw] The moment magnitude of the event.
+\item[Author] The organization that provided the preferred epicentral location
+for the event. The possible values are:
+\begin{itemize}
+\item LDG = Laboratoire de Detection Géophysique (CEA)
+\item continue here
+\end{itemize}
+\item[LocalHour] The local (i.e. not UTC) hour of the day corresponding to the
+origin time. This parameter is a floating point number in the range $[0, 24)$.
+\item[LocalWeekday] The local (i.e. not UTC) day of the week corresponding to
+the origin time. This parameter is an integer in the range $[1, 7]$ where $1$
+corresponds to Monday and 7 corresponds to Sunday.
+\item[DistanceStation1] The Euclidean distance in the reduced coordintate
+system to the closest station that was running at the time of the event. 
+\item[DistanceStation2] The Euclidean distance in the reduced coordintate
+system to the second closest station that was running at the time of the event. 
+\item[DistanceStation3] The Euclidean distance in the reduced coordintate
+system to the second closest station that was running at the time of the event. 
+\item[Type] A string containing the type of the event. Possible types are:
+\begin{itemize}
+\item ke = known earthquake;
+\item se = suspected earthquake;
+\item km = known mining event;
+\item sm = suspected mining event;
+\item me = marine event (an explosion that occurred underwater);
+\item kr = known rockburst;
+\item sr = suspected rockburst;
+\item ki = known induced event;
+\item si = suspected induced event;
+\item uk = unknown;
+\end{itemize}
+\end{description}
+The station catalog is parsed to create a tidy table with the following columns:
+\begin{description}
+\item[Name] Station name code. Serves as unique identifier for a station.
+\item[X] The x-coordinate of the station in the reduced-coordinate system.   
+\item[Y] The y-coordinate of the station in the reduced-coordinate system.   
+\item[StartTime] The UTC time at which the station started operation.
+\item[EndTime] The UTC time at which the station ended operation. Currently
+active stations have an end-time in the year 2599.
+\end{description}
+
+\section{Data exploration}
+The seismic monitoring network in France has evolved enourmously over the SiHex
+time period (1962-2009) (Fig.~\ref{fg:stations_by_year}, which leads to a
+significant geographical variation of detected earthquakes as a function of
+time (Fig.~\ref{fg:events_by_year}). In order to train a discrimination
+algorithm on such time-dependent data, we would either need to explicitly take
+the time variation into account (for example by training on time-based subsets
+of the data) or by regrouping the events by a non-time dependent but physically
+meaningful attribute such as the distance to the closest stations at the
+time of the event. We have chosen this second alternative, as it will
+generalize much better in the future, as the installation of the RESIF-core
+stations will again modify the seismic network layout.
+Fig~\ref{fg:station_clusters} shows the grouping achieved by k-means clustering
+the SiHex earthquakes into three clusters based on the distances to the three
+closest stations.
+
+\begin{figure}
+\centering
+\begin{subfigure}[t]{0.95\textwidth}
+	\centering
+	\includegraphics[width=\textwidth]{../figures/num_stations_per_year}
+	\caption{Number of stations as a functio nof year. This graph was used
+	to define four epochs: before 1970 (median number of stations 33),
+	1970-1978 (77 stations), 1978-1990 (102 stations), and after 1990 (125
+	stations).} 
+	\label{fg:stations_by_year}
+\end{subfigure}
+~
+\begin{subfigure}[t]{0.95\textwidth}
+	\centering
+	\includegraphics[width=\textwidth]{../figures/year_pdf_by_author}
+	\caption{Probability density function of earthquake occurrence as a
+	function of year. The increase in number of events over time is due to
+	the progressive installation of seismic networks.}
+	\label{fg:events_by_year}
+\end{subfigure}
+\caption{Time evolution of the seismic network and the number of recorded
+events.}
+\label{fg:network_evolution}
+\end{figure}
+
+\begin{figure}
+\centering
+\includegraphics[width=\textwidth]{../figures/clusters_dist_to_3_closest_stations_by_epoch}
+\caption{K-means custering of the SiHex earthquakes into three clusters based
+on the distances to the three closest stations. Clusters are labeled 0, 1 and
+2, and are ordered by increascing combined distance. Maps are shown as a
+function of epoch.}
+\label{fg:station_clusters}
+\end{figure}
+
+We expect that the magnitude of the detected events will also depend on the
+distance to the closest available stations at the time of the event. This
+effect is shown in Fig.~\ref{fg:mag_by_cluster} by the shift towards low
+magnitude events as the distance to the closest stations diminishes.
+
+\begin{figure}
+\centering
+\begin{subfigure}[t]{\textwidth}
+	\centering
+	\includegraphics[width=\textwidth]{../figures/mag_pdf_by_station_cluster}
+	\caption{Probability density function of $M_W$ for the SiHex
+	earthquakes. The right pannel shows the break-down by cluster.
+	} 
+	\label{fg:hist_mag_by_cluster}
+\end{subfigure}
+~
+\begin{subfigure}[t]{\textwidth}
+	\centering
+	\includegraphics[width=\textwidth]{../figures/GR_by_station_cluster}
+	\caption{Gutenberg-Richter relations for the SiHex earthquakes. The
+	right pannel shows the break-down by cluster.}
+	\label{fg:GR_by_cluster}
+\end{subfigure}
+\caption{Dependence of detected magnitudes on the distance to the closest
+stations.}
+\label{fg:mag_by_cluster}
+\end{figure}
+
+Two of the parametric attributes that we might wish to use to distinguish
+between anthropogenic and natural events are the local time of day (our
+LocalHour parameter) and the local day of the week (our LocalWeekday
+parameter). We expect natural earthquakes to be uniformly distributed over
+these two attributes, while we expect the anthropogenic events to be more
+prevalent during the daylight hours of working days.
+Figure~\ref{fg:detectability_hour} shows that the probability density function
+of natural earthquakes as a function of local hour of the day is not uniform,
+but peaks at night, with a smaller peak at noon-time.  This effect has been
+observed before in other regions (cite) and corresponds simply to variations in
+the anthropogenic noise that influence the detectability of seismic events. The
+detectability variations are smaller for the cluster corresponding to the
+shortest distances to the three closest stations. The detectability of natural
+earthquakes as a function of day of the week is nearly uniform
+(Fig.~\ref{fg:detectability_day}).
+
+\begin{figure}
+\centering
+\begin{subfigure}[t]{\textwidth}
+	\centering
+	\includegraphics[width=\textwidth]{../figures/hour_pdf_by_station_cluster}
+	\caption{Probability density function of local hour for the SiHex
+	earthquakes. The thick horizontal black line indicates the probability
+	density value for a uniform distribution.  The right pannel shows the
+	break-down by cluster. 
+	} 
+	\label{fg:detectability_hour}
+\end{subfigure}
+~
+\begin{subfigure}[t]{\textwidth}
+	\centering
+	\includegraphics[width=\textwidth]{../figures/weekday_pdf_by_station_cluster}
+	\caption{Probability density function of local day of the week for the
+	SiHex earthquakes.  The thick horizontal black line indicates the
+	probability density value for a uniform distribution.  The right pannel
+	shows the break-down by cluster.
+	} 
+	\label{fg:detectability_day}
+\end{subfigure}
+\caption{Detectability of SiHex earthquakes as a function of local hour and
+local day of the week.}
+\label{fg:detectability}
+\end{figure}
+
+The non-tectonic SiHex catalog is far from complete, as policies concerning the
+location and storage of non-tectonic events differ between agencies. The vast
+majority of non-tectonic events is discriminated by eye and rejected before
+being located. When analysing this catalog, therefore, it is important to bear
+in mind that the events we have access to may be statistically biassed.
+
+Fig.~\ref{fg:notecto_day_night} addresses our expectation that non-natural
+events should be more prevalent during daylight hours of working days, by
+dividing up the non-tectonic SiHex catalog into two subsets: the first contains
+the events that occorred during daylight hours of the workweek (defined to be
+between 8am and 7pm, Monday to Friday); the second contains all other
+events and constitues 23.7\% of the entire non-tectonic catalogue. Given the
+unknown statistical bias of the catalogue, we should not try to over-interpret
+the relative prevalences of event types. If we limit ourselves to the workday /
+other times breakdown of the catalog, we see two main families of event types:
+those whose breakdown is far from uniform (i.e.  km, sm, and me) and those
+whose breakdown is close to uniform (i.e. ki, si and
+uk). Physically speaking, these families are consistent with our expectation:
+mining and marine explosions are set off manually, and should only occur during
+the working day, while induced events (e.g. from geothermal plants or
+hydroelectric dams) can occur at any time. Unknown events seem to be
+uniform over time, which might indicate that a certain proportion of them may
+actually be small, shallow natural events. The behaviour of the rockbursts
+seems to be intermediate between the two families.
+
+\begin{figure}
+\centering
+\begin{subfigure}[t]{\textwidth}
+	\centering
+	\includegraphics[width=\textwidth]{../figures/notecto_type_bar_chart}
+	\caption{(Left) Bar chart of number of events as a function of non-tectonic
+	event type. (Right) Fraction of events of each category that occur
+	during the workday, or at other times. The thick black horizontal line
+	indicates the expected fraction for a uniform distribution over time.} 
+	\label{fg:notecto_bar}
+\end{subfigure}
+~
+\begin{subfigure}[t]{\textwidth}
+	\centering
+	\includegraphics[width=\textwidth]{../figures/notecto_type_pie_comparison}
+	\caption{Pie chart of the type distribution of non-tectonic events
+	occurring during the workday or at other times.} 
+	\label{fg:notecto_pie}
+\end{subfigure}
+\caption{Distributions of non-tectonic events according the time of day and day
+of the week, as a function of event type.}
+\label{fg:notecto_day_night}
+\end{figure}
+
+If we analyse the two families and the rockbursts in terms of their local time
+of day and day of week distributions, we obtain Figs.~\ref{fg:notecto_hour}
+and~\ref{fg:notecto_day}.
