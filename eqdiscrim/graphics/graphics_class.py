@@ -45,7 +45,27 @@ def plot_2D_scatter(X_train, X_test, Y_train, Y_test, classnames, label1,
     plt.ylabel(label2)
     plt.title('Test data')
 
- 
+    plt.savefig(join(figdir, filename))
+    plt.close()
+
+def plot_confusion_matrix(cm, labels, title, filename):
+    print labels
+    sums = np.sum(cm, axis=1)
+    print cm, sums
+    cm_norm = np.empty(cm.shape, dtype=float)
+    for i in xrange(len(sums)):
+        cm_norm[i, :] = cm[i, :]/np.float(sums[i])*100.
+    print cm_norm
+
+    fig = plt.figure()
+    ax = fig.add_subplot(111)
+    plt.matshow(cm_norm, cmap=plt.cm.gray_r)
+    plt.title(title)
+    plt.colorbar()
+    ax.set_xticklabels([''] + labels)
+    ax.set_yticklabels([''] + labels)
+    plt.xlabel('Predicted')
+    plt.ylabel('True')
 
     plt.savefig(join(figdir, filename))
     plt.close()
