@@ -197,3 +197,37 @@ def toWeekdayFraction(date):
     day_fraction = s / (3600.*24.)
 
     return date.isoweekday() + day_fraction
+
+def equalize_classes(X, Y):
+    """
+    Takes an X matrix and Y vector in which the classes are unbalanced, and
+    returns an X matrix and Y vector with the same number of elements in each
+    class. This number is given by the smallest class. 
+    """
+    # isolate the classes
+    classes = np.unique(Y)
+    n_class = len(classes)
+
+    # get the number of events in each class
+    n_per_class = np.empty(n_class, dtype=int)
+    for i in xrange(n_class):
+        n_per_class[i] = len(Y[Y==classes[i]])
+    n_min = np.min(n_per_class)
+
+    # do extraction
+    X_tmp_list = []
+    Y_tmp_list = []
+    for i in xrange(n_class):
+        indexes = np.random.permutation(n_per_class[i])
+        Xi = X[:, :][Y==classes[i]]
+        Yi = Y[:][Y==classes[i]]
+        X_tmp_list.append(Xi[indexes[0:n_min], :])
+        Y_tmp_list.append(Yi[0:n_min])
+    X_uni = np.vstack(X_tmp_list)
+    Y_uni = np.hstack(Y_tmp_list)
+
+    return X_uni, Y_uni
+
+
+
+

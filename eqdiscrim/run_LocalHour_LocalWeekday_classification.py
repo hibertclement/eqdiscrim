@@ -1,9 +1,15 @@
 import numpy as np
 import matplotlib.pyplot as plt
 from pickle import load
-from cat_io.sihex_io import read_sihex_tidy
 from sklearn.preprocessing import MinMaxScaler, LabelEncoder
 from sklearn.cross_validation import train_test_split, cross_val_score, KFold
+from sklearn.naive_bayes import MultinomialNB
+from sklearn.pipeline import Pipeline
+from sklearn.svm import SVC
+from sklearn import metrics
+from cat_io.sihex_io import read_sihex_tidy
+from graphics.graphics_class import plot_2D_scatter
+from preproc import equalize_classes
 
 
 Atable = '../static_catalogs/sihex_tidy_all.dat'
@@ -33,8 +39,9 @@ Y[Y=="me"] = "an"
 Y[Y=="ki"] = "ud"
 Y[Y=="si"] = "ud"
 Y[Y=="uk"] = "ud"
-Y[Y=="kr"] = "rb"
-Y[Y=="sr"] = "rb"
+Y[Y=="ke"] = "ud"
+Y[Y=="kr"] = "ud"
+Y[Y=="sr"] = "ud"
 # turn them into integer labels
 enc = LabelEncoder().fit(Y)
 n_class = len(enc.classes_)
@@ -63,38 +70,44 @@ Y1 = Y[:][A_cluster==1]
 Y2 = Y[:][A_cluster==2]
 
 # count the number of each class in the 0 datasets
-n_per_class = np.empty(n_class, dtype=int)
-for i in xrange(n_class):
-    n_per_class[i] = len(Y0[Y0==i])
-n_min = np.min(n_per_class)
-print "For group 0 : smallest class has %d elements"%n_min
-# extract only n_min values from each class for classification
-X_tmp_list = []
-Y_tmp_list = []
-for i in xrange(n_class):
-    indexes = np.random.permutation(n_per_class[i])
-    Xi = X0[:, :][Y0==i]
-    Yi = Y0[:][Y0==i]
-    X_tmp_list.append(Xi[indexes[0:n_min], :])
-    Y_tmp_list.append(Yi[0:n_min])
-X0_uni = np.vstack(X_tmp_list)
-Y0_uni = np.hstack(Y_tmp_list)
+X0_uni, Y0_uni = equalize_classes(X0, Y0)
 print X0_uni.shape, Y0_uni.shape
 
 # start the classification here
 X_train, X_test, Y_train, Y_test = train_test_split(X0_uni, Y0_uni, test_size=0.25)
 
-X_train = scaler.transform(X_train)
-X_test = scaler.transform(X_test)
+
+plot_2D_scatter(X_train, X_test, Y_train, Y_test, enc.classes_, 'LocalHour',
+                'LocalWeekday', 'preclass_LocalHour_LocalWeekday.png',
+                yjitter=0.15)
 
 
-# do the scatter plot
-for i in xrange(n_class):
-    xs = X_train[:, 0][Y_train==i]
-    ys = X_train[:, 1][Y_train==i]+np.random.randn(len(xs))*0.02
-    plt.scatter(xs, ys, c=colors[i])
-plt.legend(enc.classes_)
-plt.xlabel('LocalHour')
-plt.ylabel('LocalWeekday')
-plt.show()
+def evaluate_cross_validation(clf, X, Y, k):
+    # create a k-fold cross-validation iterator of k-folds
+    cv = KFold(len(Y), k, shuffle=True)
+    scores = cross_val_score(clf, X, Y, cv=cv)
+    print "Mean score: %.3f +/- %.3f"%(np.mean(scores), np.std(scores))
+
+def train_and_evaluate(clf, X_train, X_test, Y_train, Y_test):
+    clf.fit(X_train, Y_train)
+    print "Accuracy on training set: %.2f"%clf.score(X_train, Y_train)
+    print "Accuracy on testing set: %.2f"%clf.score(X_test, Y_test)
+
+    Y_pred = clf.predict(X_test)
+    print "Classification report:"
+    print metrics.classification_report(Y_test, Y_pred)
+
+    print "Confusion matrix:"
+    print metrics.confusion_matrix(Y_test, Y_pred)
+
+# do the classification
+clf_1 = Pipeline([('scaler', scaler),
+                ('clf', MultinomialNB())])
+evaluate_cross_validation(clf_1, X_train, Y_train, 5)
+train_and_evaluate(clf_1, X_train, X_test, Y_train, Y_test)
+
+clf_2 = Pipeline([('scaler', scaler),
+                ('clf', SVC(kernel='rbf'))])
+evaluate_cross_validation(clf_2, X_train, Y_train, 5)
+train_and_evaluate(clf_2, X_train, X_test, Y_train, Y_test)
 
