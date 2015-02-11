@@ -6,9 +6,10 @@ from sklearn.cross_validation import train_test_split, cross_val_score, KFold
 from sklearn.naive_bayes import MultinomialNB
 from sklearn.pipeline import Pipeline
 from sklearn.svm import SVC
+from sklearn.tree import DecisionTreeClassifier
 from sklearn import metrics
 from cat_io.sihex_io import read_sihex_tidy
-from graphics.graphics_class import plot_2D_scatter, plot_confusion_matrix
+from graphics.graphics_class import evaluate_and_plot_2D, plot_2D_scatter
 from preproc import equalize_classes
 
 
@@ -80,7 +81,7 @@ X_train, X_test, Y_train, Y_test = train_test_split(X_uni, Y_uni,
 
 
 plot_2D_scatter(X0_train, X0_test, Y0_train, Y0_test, enc.classes_,
-                'LocalHour', 'LocalWeekday',
+                'LocalHour', 'LocalWeekday', 
                 'preclass0_LocalHour_LocalWeekday.png', yjitter=0.15)
 plot_2D_scatter(X_train, X_test, Y_train, Y_test, enc.classes_,
                 'LocalHour', 'LocalWeekday',
@@ -109,14 +110,26 @@ def train_and_evaluate(clf, X_train, X_test, Y_train, Y_test):
 
 # do the classification
 
-clf = Pipeline([('scaler', scaler),
-                ('clf', SVC(kernel='rbf'))])
+clf1 = Pipeline([('scaler', scaler),
+                 ('clf', SVC(kernel='rbf'))])
+clf2 = Pipeline([('scaler', scaler),
+                 ('clf', DecisionTreeClassifier(max_depth=5))])
 
-print 'Group 0'
-#evaluate_cross_validation(clf, X0_train, Y0_train, 5)
-cm = train_and_evaluate(clf, X0_train, X0_test, Y0_train, Y0_test)
-plot_confusion_matrix(cm, enc.classes_, 'Group 0', 'cm_group0.png')
-#print 'All'
-#evaluate_cross_validation(clf, X_train, Y_train, 5)
-#cm = train_and_evaluate(clf, X_train, X_test, Y_train, Y_test)
+#print 'Group 0 SVC'
+#evaluate_cross_validation(clf1, X0_train, Y0_train, 5)
+#cm = train_and_evaluate(clf1, X0_train, X0_test, Y0_train, Y0_test)
+#plot_confusion_matrix(cm, enc.classes_, 'Group 0 - SVC', 'cm_group0_SVC.png')
+#plot_decision_boundaries(clf1, X0_train, X0_test, Y0_train, Y0_test,
+#                         'bd_group0_SVC.png')
+
+print 'Group 0 DecisionTree'
+evaluate_cross_validation(clf2, X0_train, Y0_train, 5)
+evaluate_and_plot_2D(clf2, X0_train, X0_test, Y0_train, Y0_test, enc.classes_,
+                     ['LocalHour', 'LocalWeekday'], 'Group 0 - Decision Tree',
+                     'group0_DecisionTree', yjitter=0.1)
+print 'All DecisionTree'
+evaluate_cross_validation(clf2, X_train, Y_train, 5)
+evaluate_and_plot_2D(clf2, X_train, X_test, Y_train, Y_test, enc.classes_,
+                     ['LocalHour', 'LocalWeekday'], 'All - Decision Tree',
+                     'all_DecisionTree', yjitter=0.1)
 
