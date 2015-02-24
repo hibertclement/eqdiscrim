@@ -1,0 +1,122 @@
+\chapter{Parametric classification on SiHex catalog}
+This chapter contains the first steps in training classifiers on the SiHex catalogue\ldots
+
+\section{Time-based classification}
+In the previous chapter, we discussed the local-hour and weekday distribution of anthropogenic events, as well as the local-hour (apparent) distribution of tectonic earthquakes. In this section we use this information to train a 2-class classifier using only local-hour and local-weekday attributes of located events. In the following, only two classes are discussed :
+\begin{itemize}
+\item anthropogenic events ({\bf km + sm + me}) ;
+\item uniformly distributed events ({\bf ke + se + ki + si + kr + sr}).
+\end{itemize}
+We run two classifications, one using all the data, the other using only the data for events within the `0' cluster (i.e. those events with small distances to the three closest stations). In both cases, to avoid biases due to small classes, the datasets are equalized before-hand. During equalization, all classes are reduced to the size of the smallest one by random sampling. After equalization, the data are separated into training and test-sets, where the test-sets contain 25\% of the samples. The training and test-sets for the two sets of data are shown in Figure~\ref{fg:time_test_train}.
+
+We normalize the attributes on a uniform scale from 0 to 1, then apply a Decision Tree classifier with a leaf-depth of 5. We evaluate the classifier using a 5-fold cross-validation for the training-data, and a confusion matrix for the test-data. The results are :
+\begin{itemize}
+\item full data : cross-validation accuracy $80.9\% \pm 0.5\%$ ; confusion matrix in Fig.~\ref{cm_all_DecisionTree} ;
+\item cluster 0 data : cross-validation accuracy $83.2\% \pm 0.4\%$ ; confusion matrix in Fig.~\ref{cm_group0_DecisionTree}.
+\end{itemize}
+The use of cluster 0 data improves the training accuracy by a significant amount (accuracy difference is over $4\sigma$).
+
+\begin{figure}
+\centering
+\begin{subfigure}[t]{0.95\textwidth}
+	\centering
+	\includegraphics[width=\textwidth]{../figures/preclass_LocalHour_LocalWeekday}
+	\caption{Full datasets.} 
+	\label{fg:time_test_train_all}
+\end{subfigure}
+~
+\begin{subfigure}[t]{0.95\textwidth}
+	\centering
+	\includegraphics[width=\textwidth]{../figures/preclass0_LocalHour_LocalWeekday}
+	\caption{Cluster 0 datasets.}
+	\label{time_test_train_0}
+\end{subfigure}
+\caption{Training and test equalized datasets. Attributes are LocalHour and LocalWeekday (a jitter has been added to LocalWeekday to avoid superposition of points during plotting), and symbol colors indicate class given by the SiHex catalog. }
+\label{fg:time_test_train}
+\end{figure}
+
+\begin{figure}
+\centering
+\begin{subfigure}[t]{0.45\textwidth}
+	\centering
+	\includegraphics[width=\textwidth]{../figures/all_DecisionTree}
+	\caption{Scatter plot for the full equalized dataset. Dark and light symbols indicate training and test data respectively.} 
+	\label{all_DecisionTree}
+\end{subfigure}
+\begin{subfigure}[t]{0.45\textwidth}
+	\centering
+	\includegraphics[width=\textwidth]{../figures/group0_DecisionTree}
+	\caption{Scatter plot for the cluster 0 equalized dataset. Dark and light symbols indicate training and test data respectively.}
+	\label{group0_DecisionTree}
+\end{subfigure}
+~
+\begin{subfigure}[t]{0.45\textwidth}
+	\centering
+	\includegraphics[width=\textwidth]{../figures/cm_all_DecisionTree}
+	\caption{Confusion matrix for the full equalized dataset.} 
+	\label{cm_all_DecisionTree}
+\end{subfigure}
+\begin{subfigure}[t]{0.45\textwidth}
+	\centering
+	\includegraphics[width=\textwidth]{../figures/cm_group0_DecisionTree}
+	\caption{Confusion matrix for the cluster 0 equalized dataset.}
+	\label{cm_group0_DecisionTree}
+\end{subfigure}
+\caption{Scatter plots and confusion matrices for the time-based classification. }
+\label{fg:time_classification}
+\end{figure}
+
+
+\newpage
+\section{Space-based classification}
+The spatial distribution of non-tectonic earthquakes in the SiHex catalogue contains a small number of clusters of induced and rock-burst events (see Fig.~\ref{fg:notecto_space}). These localized clusters are most likely not the only such events occurred in France during the SiHex period, but are the only ones included in the published catalog (over 99\% of non-tectonic events are not located by seismic observatories and therefore are not included in the catalogs). 
+
+\begin{figure}
+\centering
+\begin{subfigure}[t]{0.45\textwidth}
+	\centering
+	\includegraphics[width=\textwidth]{../figures/notecto_kmsmme_scatterplot}
+	\caption{km + sm + me} 
+	\label{notecto_kmsmme}
+\end{subfigure}
+\begin{subfigure}[t]{0.45\textwidth}
+	\centering
+	\includegraphics[width=\textwidth]{../figures/notecto_krsrkisi_scatterplot}
+	\caption{kr + sr + ki + si}
+	\label{notecto_krsrkisi}
+\end{subfigure}
+\caption{Scatter plots for the non-tectonic events in the SiHex catalog. }
+\label{fg:notecto_space}
+\end{figure}
+
+
+For the spaced-based classification, we use the following four classes : 
+\begin{itemize}
+\item mining events ({\bf ksm = km + sm + me}) ;
+\item induced events ({\bf ksi = ki + si}) ;
+\item rock-burst events ({\bf ksr = kr + sr}) ;
+\item tectonic events ({\bf kse = ke + se + uk}).
+\end{itemize}
+
+We use the full dataset (there are not enough cluster 0 events for the ksi or ksr classes to use only the cluster 0 data), after equalization, MinMax scaling and separation of training and test datasets. We apply a K-nearest-neighbour classifier taking into account the 5 nearest neighbors. We again evaluate the classifier using a 5-fold cross-validation for the training-data, and a confusion matrix for the test-data. The results are a cross-validation accuracy of $88.3\% \pm 0.8\%$ and the confusion matrix shown in Fig.~\ref{space_only}.
+
+If we also add the LocalHour and LocalWeekday to the K-nearest-neighbour classifier, the cross-validation accuracy deteriorates to $83.8\% \pm 0.7\%$ (a $6\sigma$ difference), and the corresponding confusion matrix is shown in Fig.~\ref{space_and_time}.
+
+\begin{figure}
+\centering
+\begin{subfigure}[t]{0.65\textwidth}
+	\centering
+	\includegraphics[width=\textwidth]{../figures/cm_allpoints_space_classification}
+	\caption{Space only.} 
+	\label{space_only}
+\end{subfigure}
+~
+\begin{subfigure}[t]{0.65\textwidth}
+	\centering
+	\includegraphics[width=\textwidth]{../figures/cm_allpoints_spacetime_classification}
+	\caption{Space and time.}
+	\label{space_and_time}
+\end{subfigure}
+\caption{Confusion matrices for (a) space and (b) space and time classifications.}
+\label{fg:space_and_spacetime}
+\end{figure}
