@@ -9,7 +9,7 @@ from sklearn.svm import SVC
 from sklearn.tree import DecisionTreeClassifier
 from sklearn import metrics
 from cat_io.sihex_io import read_sihex_tidy
-from graphics.graphics_class import evaluate_and_plot_2D, plot_2D_scatter
+from graphics.graphics_class import evaluate_and_plot_2D, plot_2D_scatter, plot_confusion_matrix
 from preproc import equalize_classes
 
 
@@ -41,6 +41,7 @@ Y[Y=="ki"] = "ud"
 Y[Y=="si"] = "ud"
 Y[Y=="uk"] = "ud"
 Y[Y=="ke"] = "ud"
+Y[Y=="se"] = "ud"
 Y[Y=="kr"] = "ud"
 Y[Y=="sr"] = "ud"
 # turn them into integer labels
@@ -127,9 +128,13 @@ evaluate_cross_validation(clf2, X0_train, Y0_train, 5)
 evaluate_and_plot_2D(clf2, X0_train, X0_test, Y0_train, Y0_test, enc.classes_,
                      ['LocalHour', 'LocalWeekday'], 'Group 0 - Decision Tree',
                      'group0_DecisionTree', yjitter=0.1)
+cm0 = train_and_evaluate(clf2, X0_train, X0_test, Y0_train, Y0_test)
+plot_confusion_matrix(cm0, enc.classes_, 'Group 0 - Decision Tree', 'cm_group0_DecisionTree')
 print 'All DecisionTree'
 evaluate_cross_validation(clf2, X_train, Y_train, 5)
 evaluate_and_plot_2D(clf2, X_train, X_test, Y_train, Y_test, enc.classes_,
                      ['LocalHour', 'LocalWeekday'], 'All - Decision Tree',
                      'all_DecisionTree', yjitter=0.1)
+cm = train_and_evaluate(clf2, X_train, X_test, Y_train, Y_test)
+plot_confusion_matrix(cm, enc.classes_, 'All - Decision Tree', 'cm_all_DecisionTree')
 

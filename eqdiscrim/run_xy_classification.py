@@ -60,6 +60,7 @@ Y[Y=="kr"] = "ksr"
 Y[Y=="sr"] = "ksr"
 Y[Y=="uk"] = "kse"
 Y[Y=="ke"] = "kse"
+Y[Y=="se"] = "kse"
 # turn them into integer labels
 enc = LabelEncoder().fit(Y)
 n_class = len(enc.classes_)
