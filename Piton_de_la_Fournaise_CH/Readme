@@ -1,0 +1,13 @@
+This folder contains the matlab scripts and the catalog used to test Random Forests classifier for discimination of events at Piton de la Fournaise Volcano.
+
+List and description of files:
+
+#-- Scripts:
+
+- ComputeAttributes.m : Matlab function used to compute the attributes from the raw signals.
+
+#-- Data:
+
+- Catalogue_2009_2011_ModifClement : Catalog of the events used in the training set.
+
+
