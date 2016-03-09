@@ -70,3 +70,5 @@ figures/
 *.gz
 *.log
 *.toc
+
+synthetic_data/
