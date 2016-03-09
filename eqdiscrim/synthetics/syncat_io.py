@@ -4,6 +4,8 @@ from os.path import join
 from scipy.stats import kurtosis
 from obspy.core import read
 from obspy.signal.filter import envelope
+from obspy.signal.util import smooth
+from obspy.signal.trigger import triggerOnset
 
 syn_dir = '../synthetic_data'
 syncat = join(syn_dir, 'syn_catalog.txt')
@@ -23,7 +25,7 @@ def proc_syn_data():
     X_orig, y, names = read_syncat()
 
     nev = len(y)
-    names = ['Kurtosis', 'MaxMean', 'DomT']
+    names = ['Kurtosis', 'MaxMean', 'DomT', 'Dur']
 
     X = np.empty((nev, len(names)), dtype=float)
     # for each event
@@ -32,15 +34,41 @@ def proc_syn_data():
         fname = "%s_*MSEED"%(otime)
         st = read(join(syn_dir, fname))
         tr = st[0]
+        starttime = tr.stats.starttime
+        dt = tr.stats.delta
+        # get start and end of signal
+        i_start, i_end = start_end(tr)
+        # trim data
+        tr.trim(starttime=starttime+i_start*dt, endtime=starttime+i_end*dt)
+        # now calculate the attributes
         kurt = kurtosis(tr.data)
         env = envelope(tr.data)
         max_mean = np.max(env) / np.mean(env)
+        dur = (i_end - i_start) * dt
         X[i, 0] = kurt
         X[i, 1] = max_mean
         X[i, 2] = dominant_period(st)
+        X[i, 3] = dur
 
     return X, y, names
 
+def start_end(tr):
+    """
+    Returns start and end times of signal using signal 2 noise ratio
+    """
+
+    # set noise level as 5th percentile on envelope amplitudes
+    env = envelope(tr.data)
+    env = smooth(env, 100)
+    noise_level = np.percentile(env, 5.0)
+
+    # trigger
+    t_list = triggerOnset(env, 1.5*noise_level, 1.5*noise_level)
+    i_start = t_list[0][0]
+    i_end = t_list[0][1]
+
+    return i_start, i_end
+    
 
 def dominant_period(st):
     """
@@ -62,8 +90,8 @@ def dominant_period(st):
     X = np.empty(npts, dtype=float)
     T = np.empty(npts, dtype=float)
 
-    D[0] = tr_diff[0]**2
-    X[0] = tr[0]**2
+    D[0] = tr_diff.data[0]**2
+    X[0] = tr.data[0]**2
     T[0] = 2 * np.pi * np.sqrt(X[0]/D[0])
 
     for j in xrange(npts-1):

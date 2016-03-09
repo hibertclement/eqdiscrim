@@ -82,8 +82,8 @@ def generate_synthetic_data(ntraces, data_dir, cat_name):
     noise = uniform.rvs(0.0, 0.1, size=ntraces)
     mu = norm.rvs(5.0, 1.0, size=ntraces)
     sigma = norm.rvs(2.0, 1.0, size=ntraces)
-    tstart = norm.rvs(3.0, 1.0, size=ntraces)
-    tlen = norm.rvs(3.0, 1.0, size=ntraces)
+    tstart = norm.rvs(2.0, 1.0, size=ntraces)
+    tlen = norm.rvs(1.0, 0.5, size=ntraces)
 
     f_ = open(join(data_dir, cat_name), 'w')
     f_.write("Otime                  Type\n")
