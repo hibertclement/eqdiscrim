@@ -4,7 +4,7 @@ import pandas as pd
 from obspy.core import UTCDateTime, read
 from obspy.signal.filter import bandpass
 from scipy.io import loadmat
-from scipy.signal import butter, filtfilt
+from scipy.signal import butter, filtfilt, lfilter
 
 import data_io as io
 import attributes as at
@@ -21,6 +21,7 @@ def suite():
     suite.addTest(AttributeTests('test_attribute_values_12_16'))
     suite.addTest(AttributeTests('test_attribute_values_17_21'))
     suite.addTest(AttributeTests('test_attribute_values_22'))
+    suite.addTest(AttributeTests('test_attribute_values_23_39'))
 
     return suite
 
@@ -90,11 +91,20 @@ class AttributeTests(unittest.TestCase):
 
         st = read(os.path.join(datadir, 'events', 'event_01*HHZ*SAC'))
         tr = st[0].copy()
+        tr2 = st[0].copy()
+
+        # using python filtfilt
         filt_data_py = filtfilt(Fb, Fa, st[0].data)
+        # using obspy
         tr.filter('bandpass', freqmin=FFI, freqmax=FFE, corners=2, zerophase=True)
+        # using python lfilter (once forwards, once backwards)
+        tr2_filt1 = lfilter(Fb, Fa, tr2.data)
+        tr2_filt2 = lfilter(Fb, Fa, tr2_filt1[::-1])
 
         self.assertAlmostEqual(len(filt_data_mat), len(tr.data))
-        self.assertAlmostEqual(max(filt_data_mat)[0], max(tr.data))
+        self.assertAlmostEqual(max(tr.data), max(tr2_filt2), 5)
+        self.assertAlmostEqual(max(filt_data_mat)[0], max(tr2_filt2))
+        #self.assertAlmostEqual(max(filt_data_mat)[0], max(tr.data))
         #self.assertAlmostEqual(len(filt_data_mat), len(filt_data_py))
         #self.assertAlmostEqual(max(filt_data_mat)[0], max(filt_data_py))
         
@@ -132,6 +142,13 @@ class AttributeTests(unittest.TestCase):
     def test_attribute_values_22(self):
 
         self.assertAlmostEqual(self.mat_array[0, 22], self.py_array[0, 22], 5)
+
+    def test_attribute_values_23_39(self):
+
+        for i in xrange(17):
+            ii = i + 23
+            print ii
+            self.assertAlmostEqual(self.mat_array[0, ii], self.py_array[0, ii], 5)
 
 
         
