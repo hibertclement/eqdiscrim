@@ -1,9 +1,11 @@
 import unittest, os
 import numpy as np
 import pandas as pd
-from obspy.core import UTCDateTime
+from obspy.core import UTCDateTime, read
+from scipy.io import loadmat
 
 import data_io as io
+import attributes as at
 
 datadir = 'test_data'
 
@@ -11,6 +13,7 @@ def suite():
     suite = unittest.TestSuite()
     suite.addTest(IOTests('test_read_catalog'))
     suite.addTest(IOTests('test_read_and_cut_events'))
+    suite.addTest(IOTests('test_read_mat_file'))
 
     return suite
 
@@ -44,6 +47,27 @@ class IOTests(unittest.TestCase):
         self.assertAlmostEqual(tr.stats.sampling_rate, 100.0)
         self.assertAlmostEqual(tr.stats.starttime - onset, 0.0, 2)
         self.assertAlmostEqual(tr.stats.endtime - endtime, 0.0, 2)
+
+    def test_read_mat_file(self):
+
+        # load attributes for first event
+        mat_fname = os.path.join(datadir, 'event01.mat')
+        mat = loadmat(mat_fname)
+        mat_array = mat['att']
+
+        # get attributes for first event en python
+        st = read(os.path.join(datadir, 'events', 'event_01*SAC'))
+
+        py_array = at.calculate_all_attributes(st)
+
+        # start assertions
+        self.assertSequenceEqual(mat_array.shape, py_array.shape)
+
+        nr, nc =  py_array.shape
+        for i in xrange(nc):
+            print i
+            self.assertAlmostEqual(mat_array[0, i], py_array[0, i])
+
 
         
 
