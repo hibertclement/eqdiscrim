@@ -1,5 +1,5 @@
 import numpy as np
-from scipy.signal import hilbert, lfilter
+from scipy.signal import hilbert, lfilter, filtfilt, find_peaks_cwt
 from scipy.stats import kurtosis, skew
 
 NATT = 61
@@ -19,6 +19,7 @@ def calculate_all_attributes(obspy_stream):
     RappMaxMean, RappMaxMedian = get_RappMaxStuff(TesMEAN, TesMEDIAN)
     AsDec = get_AsDec(obspy_stream, env)
     KurtoEnv, KurtoSig, SkewnessEnv, SkewnessSig = get_KurtoSkewStuff(obspy_stream, env)
+    CorPeakNumber, INT1, INT2, INT_RATIO = get_CorrStuff(obspy_stream)
 
     all_attributes[0, 0] = np.mean(duration(obspy_stream))
     all_attributes[0, 1] = np.mean(RappMaxMean)
@@ -28,6 +29,10 @@ def calculate_all_attributes(obspy_stream):
     all_attributes[0, 5] = np.mean(KurtoEnv)
     all_attributes[0, 6] = np.mean(np.abs(SkewnessSig))
     all_attributes[0, 7] = np.mean(np.abs(SkewnessEnv))
+    all_attributes[0, 8] = np.mean(CorPeakNumber)
+    all_attributes[0, 9] = np.mean(INT1)
+    all_attributes[0, 10] = np.mean(INT2)
+    all_attributes[0, 11] = np.mean(INT_RATIO)
 
 
     return all_attributes
@@ -126,3 +131,51 @@ def get_KurtoSkewStuff(st, env):
         SkewnessSig[i] = skew(st[i].data / data_max)
 
     return KurtoEnv, KurtoSig, SkewnessEnv, SkewnessSig
+
+def get_CorrStuff(st):
+
+    ntr = len(st)
+
+    sps = st[0].stats.sampling_rate
+    strong_filter = np.ones(int(sps)) / float(sps)
+    min_peak_height = 0.405
+    # This value is sligtly greater than the matlab one, to account for
+    # differences in floating precision
+
+    CorPeakNumber = np.empty(ntr, dtype=int)
+    INT1 = np.empty(ntr, dtype=float)
+    INT2 = np.empty(ntr, dtype=float)
+    INT_RATIO = np.empty(ntr, dtype=float)
+
+    for i in xrange(ntr):
+        cor = np.correlate(st[i].data, st[i].data, mode='full')
+        cor = cor / np.max(cor)
+
+        # find number of peaks
+        cor_env = np.abs(hilbert(cor))
+        cor_smooth = filtfilt(strong_filter, 1, cor_env)
+        cor_smooth2 = filtfilt(strong_filter, 1, cor_smooth/np.max(cor_smooth))
+        ipeaks = find_peaks_cwt(cor_smooth2, np.arange(1, int(sps)))
+        n_peaks = 0
+        for ip in ipeaks:
+            if cor_smooth2[ip] > min_peak_height:
+                n_peaks += 1
+        CorPeakNumber[i] = n_peaks
+
+        # integrate over bands
+        npts = len(cor_smooth)
+        ilag_0 = np.argmax(cor_smooth)+1
+        ilag_third = ilag_0 + npts/6
+
+        # note that these integrals are flase really (dt is not correct)
+        max_cor = np.max(cor_smooth)
+        int1 = np.trapz(cor_smooth[ilag_0 : ilag_third+1]/max_cor)
+        int2 = np.trapz(cor_smooth[ilag_third : ]/max_cor)
+        int_ratio = int1 / int2
+
+        INT1[i] = int1
+        INT2[i] = int2
+        INT_RATIO[i] = int_ratio
+
+
+    return CorPeakNumber, INT1, INT2, INT_RATIO
