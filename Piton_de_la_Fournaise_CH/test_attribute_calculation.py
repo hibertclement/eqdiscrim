@@ -66,7 +66,7 @@ class IOTests(unittest.TestCase):
         nr, nc =  py_array.shape
         for i in xrange(nc):
             print i
-            self.assertAlmostEqual(mat_array[0, i], py_array[0, i])
+            self.assertAlmostEqual(mat_array[0, i], py_array[0, i], 6)
 
 
         

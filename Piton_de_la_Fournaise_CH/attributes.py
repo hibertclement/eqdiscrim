@@ -1,5 +1,6 @@
 import numpy as np
 from scipy.signal import hilbert, lfilter
+from scipy.stats import kurtosis, skew
 
 NATT = 61
 CoefSmooth = 3
@@ -17,11 +18,17 @@ def calculate_all_attributes(obspy_stream):
     TesMEAN, TesMEDIAN, TesSTD = get_TesStuff(env)
     RappMaxMean, RappMaxMedian = get_RappMaxStuff(TesMEAN, TesMEDIAN)
     AsDec = get_AsDec(obspy_stream, env)
+    KurtoEnv, KurtoSig, SkewnessEnv, SkewnessSig = get_KurtoSkewStuff(obspy_stream, env)
 
     all_attributes[0, 0] = np.mean(duration(obspy_stream))
     all_attributes[0, 1] = np.mean(RappMaxMean)
     all_attributes[0, 2] = np.mean(RappMaxMedian)
     all_attributes[0, 3] = np.mean(AsDec)
+    all_attributes[0, 4] = np.mean(KurtoSig)
+    all_attributes[0, 5] = np.mean(KurtoEnv)
+    all_attributes[0, 6] = np.mean(np.abs(SkewnessSig))
+    all_attributes[0, 7] = np.mean(np.abs(SkewnessEnv))
+
 
     return all_attributes
 
@@ -97,3 +104,25 @@ def get_AsDec(st, env):
         AsDec[i] = (imax+1) / float(len(st[i].data) - (imax+1))
     
     return AsDec
+
+def get_KurtoSkewStuff(st, env):
+
+    ntr = len(st)
+
+    KurtoEnv = np.empty(ntr, dtype=float)
+    KurtoSig = np.empty(ntr, dtype=float)
+    SkewnessEnv = np.empty(ntr, dtype=float)
+    SkewnessSig = np.empty(ntr, dtype=float)
+
+    light_filter = np.ones(CoefSmooth) / float(CoefSmooth)
+
+    for i in xrange(ntr):
+        env_max = np.max(env[i])
+        data_max = np.max(st[i].data)
+        tmp = lfilter(light_filter, 1, env[i]/env_max)
+        KurtoEnv[i] = kurtosis(tmp, fisher=False)
+        SkewnessEnv[i] = skew(tmp)
+        KurtoSig[i] = kurtosis(st[i].data / data_max, fisher=False)
+        SkewnessSig[i] = skew(st[i].data / data_max)
+
+    return KurtoEnv, KurtoSig, SkewnessEnv, SkewnessSig
