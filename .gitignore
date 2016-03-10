@@ -72,3 +72,4 @@ figures/
 *.toc
 
 synthetic_data/
+*.m~

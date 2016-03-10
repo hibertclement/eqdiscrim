@@ -70,11 +70,11 @@ FFTdata{ii}=2*abs(fft(SIG{ii},n))./length(SIG{ii}).^2;% FFT modulus
 SMOOTHEDFFT{ii}=(filter(ones(300,1)./300,1,FFTdata{ii}(1:n/2)));% Smoothed spectrum
 NORMALIZEDSMOOTHEDFFT{ii}=SMOOTHEDFFT{ii}./(max(SMOOTHEDFFT{ii}));% Normalized spectrum
 MEANFFT(ii)=mean(NORMALIZEDSMOOTHEDFFT{ii}); % Mean Normalized SPectrum = Y centroid
-XCENTERFFT(ii)=sum((1:length(NORMALIZEDSMOOTHEDFFT{ii})).*NORMALIZEDSMOOTHEDFFT{ii},1)...
+XCENTERFFT(ii)=sum( (1:length(NORMALIZEDSMOOTHEDFFT{ii}))' .*NORMALIZEDSMOOTHEDFFT{ii},1)...
     /sum(NORMALIZEDSMOOTHEDFFT{ii},1); % X of centroid (X mean)
-XCENTERFFT1QUART(ii)=sum((1:length(NORMALIZEDSMOOTHEDFFT{ii}(1:round(XCENTERFFT(ii))))).*NORMALIZEDSMOOTHEDFFT{ii}(1:round(XCENTERFFT(ii))),1)...
+XCENTERFFT1QUART(ii)=sum((1:length(NORMALIZEDSMOOTHEDFFT{ii}(1:round(XCENTERFFT(ii)))))'.*NORMALIZEDSMOOTHEDFFT{ii}(1:round(XCENTERFFT(ii))),1)...
     /sum(NORMALIZEDSMOOTHEDFFT{ii}(1:round(XCENTERFFT(ii))),1); % X 1 quartile
-XCENTERFFT3QUART(ii)=sum((1:length(NORMALIZEDSMOOTHEDFFT{ii}(round(XCENTERFFT(ii)):end))).*NORMALIZEDSMOOTHEDFFT{ii}(round(XCENTERFFT(ii)):end),1)...
+XCENTERFFT3QUART(ii)=sum((1:length(NORMALIZEDSMOOTHEDFFT{ii}(round(XCENTERFFT(ii)):end)))'.*NORMALIZEDSMOOTHEDFFT{ii}(round(XCENTERFFT(ii)):end),1)...
     /sum(NORMALIZEDSMOOTHEDFFT{ii}(round(XCENTERFFT(ii)):end),1)+round(XCENTERFFT(ii)); % X 3 quartile
 [MAXFFT(ii),IFMAXFFT]=max(SMOOTHEDFFT{ii}); %Max of FFT
 FMAX(ii)=Freq1(IFMAXFFT); % Frequence at Max(FFT)
@@ -92,7 +92,7 @@ E3FFT(ii)=trapz(NORMALIZEDSMOOTHEDFFT{ii}(2*end/4:3*end/4));%idem 25-37.5Hz
 E4FFT(ii)=trapz(NORMALIZEDSMOOTHEDFFT{ii}(3*end/4:end));% idem 37.5-50Hz
 % Moment 
 for k=0:2
-    MOMENT(k+1)=sum(Freq1.^k.*(NORMALIZEDSMOOTHEDFFT{ii}(1:n/2).^2));
+    MOMENT(k+1)=sum((Freq1.^k)'.*(NORMALIZEDSMOOTHEDFFT{ii}(1:n/2).^2));
 end
 gamma1(ii)=MOMENT(2)/MOMENT(1); %centroid
 gamma2(ii)=sqrt(MOMENT(3)/MOMENT(1)); % gyration radius
