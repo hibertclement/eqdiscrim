@@ -3,7 +3,6 @@ from scipy.signal import hilbert, lfilter
 
 NATT = 61
 CoefSmooth = 3
-d_filter = np.ones(CoefSmooth) / float(CoefSmooth)
 
 def calculate_all_attributes(obspy_stream):
 
@@ -16,12 +15,13 @@ def calculate_all_attributes(obspy_stream):
     env = envelope(obspy_stream)
 
     TesMEAN, TesMEDIAN, TesSTD = get_TesStuff(env)
-
     RappMaxMean, RappMaxMedian = get_RappMaxStuff(TesMEAN, TesMEDIAN)
+    AsDec = get_AsDec(obspy_stream, env)
 
     all_attributes[0, 0] = np.mean(duration(obspy_stream))
     all_attributes[0, 1] = np.mean(RappMaxMean)
     all_attributes[0, 2] = np.mean(RappMaxMedian)
+    all_attributes[0, 3] = np.mean(AsDec)
 
     return all_attributes
 
@@ -56,9 +56,11 @@ def get_TesStuff(env):
     TesMEDIAN = np.empty(ntr, dtype=float)
     TesSTD = np.empty(ntr, dtype=float)
 
+    light_filter = np.ones(CoefSmooth) / float(CoefSmooth)
+
     for i in xrange(ntr):
         env_max = np.max(env[i])
-        tmp = lfilter(d_filter, 1, env[i]/env_max)
+        tmp = lfilter(light_filter, 1, env[i]/env_max)
         TesMEAN[i] = np.mean(tmp)
         TesMEDIAN[i] = np.median(tmp)
         TesSTD[i] = np.std(tmp)
@@ -79,3 +81,19 @@ def get_RappMaxStuff(TesMEAN, TesMEDIAN):
         RappMaxMedian[i] = 1./np.mean(TesMEDIAN[0:i+1])
 
     return RappMaxMean, RappMaxMedian
+
+def get_AsDec(st, env):
+
+    sps = st[0].stats.sampling_rate
+    strong_filter = np.ones(int(sps)) / float(sps)
+
+    ntr = len(st)
+    
+    AsDec = np.empty(ntr, dtype=float)
+
+    for i in xrange(ntr):
+        smooth_env = lfilter(strong_filter, 1, env[i])
+        imax = np.argmax(smooth_env)
+        AsDec[i] = (imax+1) / float(len(st[i].data) - (imax+1))
+    
+    return AsDec
