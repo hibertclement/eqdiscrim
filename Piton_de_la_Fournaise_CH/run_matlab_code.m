@@ -12,6 +12,6 @@ values{1} = zwfm.trace;
 values{2} = nwfm.trace;
 values{3} = ewfm.trace;
 
-[att, att_std] = ComputeAttributes(values, 100, 3);
+[att, att_std] = ComputeAttributes(values, 100, 2);
 
 save test_data/event01.mat att

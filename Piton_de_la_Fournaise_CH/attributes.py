@@ -24,6 +24,7 @@ def calculate_all_attributes(obspy_stream):
     MeanFFT, MaxFFT, FmaxFFT, MedianFFT, VarFFT, FCentroid, Fquart1, Fquart3,\
         NpeakFFT, MeanPeaksFFT, E1FFT, E2FFT, E3FFT, E4FFT, gamma1, gamma2,\
         gammas = get_full_spectrum_stuff(obspy_stream)
+    rectilinP, azimuthP, dipP, Plani = get_polarization_stuff(obspy_stream, env)
 
     # waveform
     all_attributes[0, 0] = np.mean(duration(obspy_stream))
@@ -68,6 +69,12 @@ def calculate_all_attributes(obspy_stream):
     all_attributes[0, 37] = np.mean(gamma1)
     all_attributes[0, 38] = np.mean(gamma2)
     all_attributes[0, 39] = np.mean(gammas)
+
+    # polarisation
+    all_attributes[0, 57] = rectilinP
+    all_attributes[0, 58] = azimuthP
+    all_attributes[0, 59] = dipP
+    all_attributes[0, 60] = Plani
 
     return all_attributes
 
@@ -338,6 +345,32 @@ def get_full_spectrum_stuff(st):
     return MeanFFT, MaxFFT, FmaxFFT, MedianFFT, VarFFT, FCentroid, Fquart1, \
            Fquart3, NpeakFFT, MeanPeaksFFT, E1FFT, E2FFT, E3FFT, E4FFT, gamma1,\
            gamma2, gammas
+
+def get_polarization_stuff(st, env):
+
+    sps = st[0].stats.sampling_rate
+    strong_filter = np.ones(int(sps)) / float(sps)
+    smooth_env = lfilter(strong_filter, 1, env[2])
+    imax = np.argmax(smooth_env)
+    end_window = int(np.round(imax/3.))
+
+    zP = st[0].data[0:end_window]
+    yP = st[1].data[0:end_window]
+    xP = st[2].data[0:end_window]
+
+    MP = np.cov(np.array([xP, yP, zP]))
+    w, v = np.linalg.eig(MP)
+
+    indexes = np.argsort(w)
+
+    rectilinP = 1 - ( (w[indexes[0]] + w[indexes[1]]) / (2*w[indexes[2]]) )
+    azimuthP = np.arctan(v[1, indexes[2]] / v[0, indexes[2]]) * 180./np.pi
+    dipP = np.arctan(v[2, indexes[2]] / np.sqrt(v[1, indexes[2]]**2 + v[0, indexes[2]]**2))
+    Plani = 1 - (2 * v[0, indexes[0]]) / (v[2, indexes[2]] + v[1, indexes[1]])
+
+    #import pdb; pdb.set_trace()
+    return rectilinP, azimuthP, dipP, Plani
+
 
 def nextpow2(i):
     n = 1

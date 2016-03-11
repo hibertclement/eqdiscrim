@@ -156,7 +156,7 @@ if flag==2
             xP=SIG{3}(1:EndWindow)';% Horiz 1
             yP=SIG{2}(1:EndWindow)';% Horiz 2
             zP=SIG{1}(1:EndWindow)';% Vertical (Up)
-            MP=cov([xP yP zP]);%covariance(xP,yP,zP);
+            MP=cov([xP; yP; zP]');%covariance(xP,yP,zP);
             [pP,DP] = eig(MP);
             %%% DP contains the eigenvalues of the covariance matrix, with
             %%% DP(3,3)>DP(2,2)>DP(1,1)

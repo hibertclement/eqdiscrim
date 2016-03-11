@@ -24,6 +24,7 @@ def suite():
     suite.addTest(AttributeTests('test_attribute_values_23_32'))
     suite.addTest(AttributeTests('test_attribute_values_33_36'))
     suite.addTest(AttributeTests('test_attribute_values_37_39'))
+    suite.addTest(AttributeTests('test_attribute_values_57_60'))
 
     return suite
 
@@ -158,6 +159,11 @@ class AttributeTests(unittest.TestCase):
     def test_attribute_values_37_39(self):
 
         for i in np.arange(37, 40):
+            self.assertAlmostEqual(self.mat_array[0, i], self.py_array[0, i], 5)
+
+    def test_attribute_values_57_60(self):
+
+        for i in np.arange(57, 61):
             self.assertAlmostEqual(self.mat_array[0, i], self.py_array[0, i], 5)
 
         
