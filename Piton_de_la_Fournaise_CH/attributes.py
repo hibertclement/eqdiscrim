@@ -21,7 +21,9 @@ def calculate_all_attributes(obspy_stream):
     KurtoEnv, KurtoSig, SkewnessEnv, SkewnessSig = get_KurtoSkewStuff(obspy_stream, env)
     CorPeakNumber, INT1, INT2, INT_RATIO = get_CorrStuff(obspy_stream)
     ES, KurtoF = get_freq_band_stuff(obspy_stream)
-    MeanFFT, MaxFFT, FmaxFFT, MedianFFT, VarFFT, FCentroid, Fquart1, Fquart3, NpeakFFT, MeanPeaksFFT = get_full_spectrum_stuff(obspy_stream)
+    MeanFFT, MaxFFT, FmaxFFT, MedianFFT, VarFFT, FCentroid, Fquart1, Fquart3,\
+        NpeakFFT, MeanPeaksFFT, E1FFT, E2FFT, E3FFT, E4FFT, gamma1, gamma2,\
+        gammas = get_full_spectrum_stuff(obspy_stream)
 
     # waveform
     all_attributes[0, 0] = np.mean(duration(obspy_stream))
@@ -59,6 +61,13 @@ def calculate_all_attributes(obspy_stream):
     all_attributes[0, 30] = np.mean(VarFFT)
     all_attributes[0, 31] = np.mean(NpeakFFT)
     all_attributes[0, 32] = np.mean(MeanPeaksFFT)
+    all_attributes[0, 33] = np.mean(E1FFT)
+    all_attributes[0, 34] = np.mean(E2FFT)
+    all_attributes[0, 35] = np.mean(E3FFT)
+    all_attributes[0, 36] = np.mean(E4FFT)
+    all_attributes[0, 37] = np.mean(gamma1)
+    all_attributes[0, 38] = np.mean(gamma2)
+    all_attributes[0, 39] = np.mean(gammas)
 
     return all_attributes
 
@@ -254,6 +263,13 @@ def get_full_spectrum_stuff(st):
     Fquart3 = np.empty(ntr, dtype=float)
     NpeakFFT = np.empty(ntr, dtype=float)
     MeanPeaksFFT = np.empty(ntr, dtype=float)
+    E1FFT = np.empty(ntr, dtype=float)
+    E2FFT = np.empty(ntr, dtype=float)
+    E3FFT = np.empty(ntr, dtype=float)
+    E4FFT = np.empty(ntr, dtype=float)
+    gamma1 = np.empty(ntr, dtype=float)
+    gamma2 = np.empty(ntr, dtype=float)
+    gammas = np.empty(ntr, dtype=float)
 
     b = np.ones(300) / 300.0
 
@@ -293,7 +309,7 @@ def get_full_spectrum_stuff(st):
         Fquart1[i] = Freq1[i_xCenterFFT_1quart]
         Fquart3[i] = Freq1[i_xCenterFFT_3quart]
 
-        ipeaks = find_peaks_cwt(FFTsmooth_norm, np.arange(1, int(sps)))
+        ipeaks = find_peaks_cwt(FFTsmooth_norm, np.arange(n/8, n/2))
         min_peak_height = 0.75
         n_peaks = 0
         sum_peaks = 0.
@@ -304,11 +320,24 @@ def get_full_spectrum_stuff(st):
 
         NpeakFFT[i] = n_peaks
         MeanPeaksFFT[i] = sum_peaks / float(n_peaks)
- 
-        #import pdb; pdb.set_trace()
 
+        npts = len(FFTsmooth_norm)
+        E1FFT[i] = np.trapz(FFTsmooth_norm[0 : npts/4])
+        E2FFT[i] = np.trapz(FFTsmooth_norm[npts/4-1 : 2*npts/4])
+        E3FFT[i] = np.trapz(FFTsmooth_norm[2*npts/4-1 : 3*npts/4])
+        E4FFT[i] = np.trapz(FFTsmooth_norm[3*npts/4-1 : npts])
+ 
+        moment = np.empty(3, dtype=float)
+
+        for j in xrange(3):
+            moment[j] = np.sum( Freq1**j * FFTsmooth_norm[0:n/2]**2)
+        gamma1[i] = moment[1]/moment[0]
+        gamma2[i] = np.sqrt(moment[2]/moment[0])
+        gammas[i] = np.sqrt(np.abs(gamma1[i]**2 - gamma2[i]**2))
     
-    return MeanFFT, MaxFFT, FmaxFFT, MedianFFT, VarFFT, FCentroid, Fquart1, Fquart3, NpeakFFT, MeanPeaksFFT
+    return MeanFFT, MaxFFT, FmaxFFT, MedianFFT, VarFFT, FCentroid, Fquart1, \
+           Fquart3, NpeakFFT, MeanPeaksFFT, E1FFT, E2FFT, E3FFT, E4FFT, gamma1,\
+           gamma2, gammas
 
 def nextpow2(i):
     n = 1

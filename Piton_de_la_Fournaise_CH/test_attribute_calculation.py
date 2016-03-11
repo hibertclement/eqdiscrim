@@ -21,7 +21,9 @@ def suite():
     suite.addTest(AttributeTests('test_attribute_values_12_16'))
     suite.addTest(AttributeTests('test_attribute_values_17_21'))
     suite.addTest(AttributeTests('test_attribute_values_22'))
-    suite.addTest(AttributeTests('test_attribute_values_23_39'))
+    suite.addTest(AttributeTests('test_attribute_values_23_32'))
+    suite.addTest(AttributeTests('test_attribute_values_33_36'))
+    suite.addTest(AttributeTests('test_attribute_values_37_39'))
 
     return suite
 
@@ -131,25 +133,32 @@ class AttributeTests(unittest.TestCase):
 
     def test_attribute_values_12_16(self):
 
-        for i in [12, 13, 14, 15, 16]:
+        for i in np.arange(12, 17):
             self.assertAlmostEqual(self.mat_array[0, i], self.py_array[0, i], 5)
 
     def test_attribute_values_17_21(self):
 
-        for i in [17, 18, 19, 20, 21]:
+        for i in np.arange(17, 22):
             self.assertAlmostEqual(self.mat_array[0, i], self.py_array[0, i], 5)
 
     def test_attribute_values_22(self):
 
         self.assertAlmostEqual(self.mat_array[0, 22], self.py_array[0, 22], 5)
 
-    def test_attribute_values_23_39(self):
+    def test_attribute_values_23_32(self):
 
-        for i in xrange(17):
-            ii = i + 23
-            print ii
-            self.assertAlmostEqual(self.mat_array[0, ii], self.py_array[0, ii], 5)
+        for i in np.arange(23, 33):
+            self.assertAlmostEqual(self.mat_array[0, i], self.py_array[0, i], 5)
 
+    def test_attribute_values_33_36(self):
+
+        for i in np.arange(33, 37):
+            self.assertAlmostEqual(self.mat_array[0, i], self.py_array[0, i], 5)
+
+    def test_attribute_values_37_39(self):
+
+        for i in np.arange(37, 40):
+            self.assertAlmostEqual(self.mat_array[0, i], self.py_array[0, i], 5)
 
         
 
