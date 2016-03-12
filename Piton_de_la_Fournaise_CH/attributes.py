@@ -1,5 +1,5 @@
 import numpy as np
-from scipy.signal import hilbert, lfilter, filtfilt, find_peaks_cwt, butter
+from scipy.signal import hilbert, lfilter, filtfilt, find_peaks_cwt, butter, spectrogram
 from scipy.stats import kurtosis, skew
 
 NATT = 61
@@ -25,6 +25,7 @@ def calculate_all_attributes(obspy_stream):
         NpeakFFT, MeanPeaksFFT, E1FFT, E2FFT, E3FFT, E4FFT, gamma1, gamma2,\
         gammas = get_full_spectrum_stuff(obspy_stream)
     rectilinP, azimuthP, dipP, Plani = get_polarization_stuff(obspy_stream, env)
+    ntr = get_pseudo_spectral_stuff(obspy_stream)
 
     # waveform
     all_attributes[0, 0] = np.mean(duration(obspy_stream))
@@ -370,9 +371,31 @@ def get_polarization_stuff(st, env):
     dipP = np.arctan(pP[2, 2] / np.sqrt(pP[1, 2]**2 + pP[0, 2]**2)) * 180/np.pi
     Plani = 1 - (2 * DP[0]) / (DP[1] + DP[2])
 
-    #import pdb; pdb.set_trace()
     return rectilinP, azimuthP, dipP, Plani
 
+def get_pseudo_spectral_stuff(st):
+
+    tr = st[0]
+    sps = tr.stats.sampling_rate
+    npts = tr.stats.npts
+
+    SpecWindow = int(sps)
+    noverlap = int(0.90 * SpecWindow)
+    n = nextpow2(2 * npts - 1)
+
+    b_filt = np.ones(100) / 100.0
+
+
+    ntr = len(st)
+    for i in xrange(ntr):
+        tr = st[i]
+        f, t, spec = spectrogram(tr.data, fs=sps, window='hamming',
+                                 nperseg=SpecWindow, nfft=n, noverlap=noverlap,
+                                 scaling='spectrum')
+        smooth_spec = lfilter(b_filt, 1, np.abs(spec), axis=1) 
+        #import pdb; pdb.set_trace()
+
+    return ntr
 
 def nextpow2(i):
     n = 1

@@ -4,7 +4,7 @@ import pandas as pd
 from obspy.core import UTCDateTime, read
 from obspy.signal.filter import bandpass
 from scipy.io import loadmat
-from scipy.signal import butter, filtfilt, lfilter
+from scipy.signal import butter, filtfilt, lfilter, spectrogram
 
 import data_io as io
 import attributes as at
@@ -18,6 +18,7 @@ def suite():
     suite.addTest(AttributeTests('test_filter_coefs'))
     suite.addTest(AttributeTests('test_filtering_data'))
     suite.addTest(AttributeTests('test_polarization_synth'))
+    suite.addTest(AttributeTests('test_spectrogram_calc'))
     suite.addTest(AttributeTests('test_attribute_values_0_11'))
     suite.addTest(AttributeTests('test_attribute_values_12_16'))
     suite.addTest(AttributeTests('test_attribute_values_17_21'))
@@ -184,6 +185,46 @@ class AttributeTests(unittest.TestCase):
         self.assertAlmostEqual(dipP, mat['dipP'][0][0])
         self.assertAlmostEqual(Plani, mat['Plani'][0][0])
 
+    def test_spectrogram_calc(self):
+
+        fname = os.path.join(datadir, 'IU*MXZ*sac')
+        st = read(fname)
+        tr = st[0]
+
+        mat_fname = os.path.join(datadir, 'spec_test.mat')
+        mat = loadmat(mat_fname)
+        mat_spec = mat['spec']
+        mat_smooth_spec = mat['smooth_spec']
+        mat_f = mat['F'].flatten()
+        mat_t = mat['T'].flatten()
+        mat_fft = mat['FFT'].flatten()
+
+        sps = 4.0
+        npts = tr.stats.npts
+        n = at.nextpow2(2*npts-1)
+        n2 = at.nextpow2(2*200-1)
+
+        fft = np.fft.fft(st[0].data, n)
+        f, t, spec = spectrogram(st[0].data, fs=4.0, window='hamming',
+                                 nperseg=200, nfft=n2, noverlap=90,
+                                 scaling='density')
+
+        nf = len(fft)
+        i_f = np.random.randint(0, nf)
+        self.assertEqual(len(mat_fft), len(fft))
+        self.assertAlmostEqual(mat_fft[i_f], fft[i_f])
+
+        nr, nc = spec.shape
+        ir = np.random.randint(0, nr)
+        ic = np.random.randint(0, nc)
+
+        self.assertEqual(len(mat_t), len(t))
+        self.assertEqual(len(mat_f), len(f))
+        self.assertAlmostEqual(mat_f[ir], f[ir])
+        self.assertAlmostEqual(mat_t[ic], t[ic])
+        self.assertSequenceEqual(mat_spec.shape, spec.shape)
+        for i in xrange(nc):
+            self.assertAlmostEqual(mat_spec[ir, i], spec[ir, i])
 
 if __name__ == '__main__':
 

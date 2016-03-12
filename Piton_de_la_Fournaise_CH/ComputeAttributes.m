@@ -102,7 +102,8 @@ gammas(ii)=sqrt(abs(gamma1(ii)^2-gamma2(ii)^2)); % spectrum width
 % - Pseudo-Spectro
 SpecWdow=sps; % Length of th windos used to compute the spectrogram (samples)
 noverlap=0.90*SpecWdow; % overlap of the moving window
-SPEC{ii}=filter(ones(1,100)./100,1,(abs(spectrogram(SIG{ii},SpecWdow,noverlap,Freq1,sps))),[],1); % Compute and smooth Spectro
+[ss, F, T] = spectrogram(SIG{ii},SpecWdow,noverlap,n,sps);
+SPEC{ii}=filter(ones(1,100)./100,1,(abs(ss)),[],1); % Compute and smooth Spectro
 [SpecMaxEnv{ii},SpecMaxFreq{ii}]=max(SPEC{ii},[],1); % Max of each DFT in Spec
 SpecMeanEnv{ii}=mean(SPEC{ii},1); % Mean of each DFT in Spec
 SpecMedianEnv{ii}=median(SPEC{ii},1); % Median of each DFT in Spec
