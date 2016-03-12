@@ -17,6 +17,7 @@ def suite():
     suite.addTest(IOTests('test_read_and_cut_events'))
     suite.addTest(AttributeTests('test_filter_coefs'))
     suite.addTest(AttributeTests('test_filtering_data'))
+    suite.addTest(AttributeTests('test_polarization_synth'))
     suite.addTest(AttributeTests('test_attribute_values_0_11'))
     suite.addTest(AttributeTests('test_attribute_values_12_16'))
     suite.addTest(AttributeTests('test_attribute_values_17_21'))
@@ -166,7 +167,22 @@ class AttributeTests(unittest.TestCase):
         for i in np.arange(57, 61):
             self.assertAlmostEqual(self.mat_array[0, i], self.py_array[0, i], 5)
 
-        
+    def test_polarization_synth(self):
+
+        fname = os.path.join(datadir, 'pol*.sac')
+        st = read(fname)
+        st.sort(keys=['channel'], reverse=True)
+
+        env = at.envelope(st)
+        rectilinP, azimuthP, dipP, Plani = at.get_polarization_stuff(st, env)
+
+        mat_fname = os.path.join(datadir, 'pol_test.mat')
+        mat = loadmat(mat_fname)
+
+        self.assertAlmostEqual(rectilinP, mat['rectilinP'][0][0])
+        self.assertAlmostEqual(azimuthP, mat['azimuthP'][0][0])
+        self.assertAlmostEqual(dipP, mat['dipP'][0][0])
+        self.assertAlmostEqual(Plani, mat['Plani'][0][0])
 
 
 if __name__ == '__main__':

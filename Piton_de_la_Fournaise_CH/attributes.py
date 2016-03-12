@@ -350,23 +350,25 @@ def get_polarization_stuff(st, env):
 
     sps = st[0].stats.sampling_rate
     strong_filter = np.ones(int(sps)) / float(sps)
-    smooth_env = lfilter(strong_filter, 1, env[2])
+    smooth_env = lfilter(strong_filter, 1, env[0])
     imax = np.argmax(smooth_env)
     end_window = int(np.round(imax/3.))
 
-    zP = st[0].data[0:end_window]
-    yP = st[1].data[0:end_window]
     xP = st[2].data[0:end_window]
+    yP = st[1].data[0:end_window]
+    zP = st[0].data[0:end_window]
 
     MP = np.cov(np.array([xP, yP, zP]))
     w, v = np.linalg.eig(MP)
 
     indexes = np.argsort(w)
+    DP = w[indexes]
+    pP = v[:, indexes]
 
-    rectilinP = 1 - ( (w[indexes[0]] + w[indexes[1]]) / (2*w[indexes[2]]) )
-    azimuthP = np.arctan(v[1, indexes[2]] / v[0, indexes[2]]) * 180./np.pi
-    dipP = np.arctan(v[2, indexes[2]] / np.sqrt(v[1, indexes[2]]**2 + v[0, indexes[2]]**2))
-    Plani = 1 - (2 * v[0, indexes[0]]) / (v[2, indexes[2]] + v[1, indexes[1]])
+    rectilinP = 1 - ( (DP[0] + DP[1]) / (2*DP[2]) )
+    azimuthP = np.arctan(pP[1, 2] / pP[0, 2]) * 180./np.pi
+    dipP = np.arctan(pP[2, 2] / np.sqrt(pP[1, 2]**2 + pP[0, 2]**2)) * 180/np.pi
+    Plani = 1 - (2 * DP[0]) / (DP[1] + DP[2])
 
     #import pdb; pdb.set_trace()
     return rectilinP, azimuthP, dipP, Plani

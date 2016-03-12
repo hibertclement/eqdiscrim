@@ -30,6 +30,7 @@ Duration(ii)=length(SIG{ii})./sps; % Duration of signal
 SMOOTHEDENVELOP{ii}=filter(ones(HeavySmoothCoef,1)./HeavySmoothCoef,1,ENV{ii}); % heavy smoothing of the envelope for Increasgin/Decreasing estimate
 [MT2,ImaxT2]=max(SMOOTHEDENVELOP{ii}); % Find max enve smoothed
 TASSENCDES(ii)=((ImaxT2)/(length(SIG{ii})-ImaxT2));% ratio Increasing time/Decreasing Time
+ImaxT2ii(ii)=ImaxT2;
 
 if size((1:length(SIG{ii}(ImaxT2:end))),2)==size(abs(hilbert(SIG{ii}(ImaxT2:end))),2)
     RMSDECAMPENV(ii)=sqrt(mean(abs(hilbert(SIG{ii}(ImaxT2:end)./max(SIG{ii})))-...
@@ -149,7 +150,7 @@ end
 
 %% Polarisation features
 
-EndWindow=round(ImaxT2/3); % Window onto which compute the polarisation parameters (Default AScending time)
+EndWindow=round(ImaxT2ii(1)/3); % Window onto which compute the polarisation parameters (Default AScending time on Vertical)
 % A TESTer PLUSIEURS TAILLE FENETRE
 
 if flag==2 
