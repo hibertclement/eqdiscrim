@@ -1,5 +1,5 @@
 import numpy as np
-from scipy.signal import hilbert, lfilter, filtfilt, find_peaks_cwt, butter, spectrogram
+from scipy.signal import hilbert, lfilter, find_peaks_cwt, butter, spectrogram
 from scipy.stats import kurtosis, skew
 
 NATT = 61
@@ -201,8 +201,8 @@ def get_CorrStuff(st):
 
         # find number of peaks
         cor_env = np.abs(hilbert(cor))
-        cor_smooth = filtfilt(strong_filter, 1, cor_env)
-        cor_smooth2 = filtfilt(strong_filter, 1, cor_smooth/np.max(cor_smooth))
+        cor_smooth = l2filter(strong_filter, 1, cor_env)
+        cor_smooth2 = l2filter(strong_filter, 1, cor_smooth/np.max(cor_smooth))
         ipeaks = find_peaks_cwt(cor_smooth2, np.arange(1, int(sps)))
         n_peaks = 0
         for ip in ipeaks:
@@ -246,7 +246,7 @@ def get_freq_band_stuff(st):
         for j in xrange(nf):
             #import pdb; pdb.set_trace()
             #Fb, Fa = butter(2, [FFI[j]/NyF, FFE[j]/NyF], 'bandpass')
-            #data_filt = filtfilt(Fb, Fa, tr.data)  # This filter is broken !!
+            #data_filt = l2filter(Fb, Fa, tr.data)  # This filter is broken !!
             tr = st[i].copy()
             data_filt = tr.filter('bandpass', freqmin=FFI[j], freqmax=FFE[j], corners=2, zerophase=True)
             # this integral is also bogus...
@@ -401,3 +401,13 @@ def nextpow2(i):
     n = 1
     while n < i: n *= 2
     return n
+
+def l2filter(b, a, x):
+
+    # explicit two-pass filtering with no bells or whistles
+
+    x_01 = lfilter(b, a, x)
+    x_02 = lfilter(b, a, x_01[::-1])
+    x_02 = x_02[::-1]
+
+    return x_02

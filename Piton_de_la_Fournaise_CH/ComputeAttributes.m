@@ -42,12 +42,14 @@ end
 
 [COR,lag]=xcorr(SIG{ii},'coeff'); %autocorrelation
 CORSMOOTH=abs(hilbert(COR)); %autocorrelation enveloppe
-CORSMOOTH=filtfilt(ones(HeavySmoothCoef,1)./HeavySmoothCoef,1,CORSMOOTH); % Smoothing
+%CORSMOOTH=filtfilt(ones(HeavySmoothCoef,1)./HeavySmoothCoef,1,CORSMOOTH); % Smoothing
+CORSMOOTH=l2filter(ones(HeavySmoothCoef,1)./HeavySmoothCoef,1,CORSMOOTH); % Smoothing
 I=find(lag>=0);
 INT1(ii)=trapz(CORSMOOTH(I(1)+(1:round(length(I)/3)))./max(CORSMOOTH)); % Integrale de 0 à 1/3
 INT2(ii)=trapz(CORSMOOTH(round(length(I)/3)+I(1):end)./max(CORSMOOTH)); %Integrale de 1/3  à end
 INT(ii)=INT1(ii)/INT2(ii); % rapport des intégrales
-[CORl,CORp]=findpeaks(filtfilt(ones(100,1)./100,1,CORSMOOTH./max(CORSMOOTH)),'MinPeakHeight',0.4);
+%[CORl,CORp]=findpeaks(filtfilt(ones(100,1)./100,1,CORSMOOTH./max(CORSMOOTH)),'MinPeakHeight',0.4);
+[CORl,CORp]=findpeaks(l2filter(ones(100,1)./100,1,CORSMOOTH./max(CORSMOOTH)),'MinPeakHeight',0.4);
 CORPEAKNUMBER(ii)=length(CORp);
 
 % Energy in several frequency band
@@ -56,7 +58,8 @@ FilterFrequencyI=[0.1,1,3,10,20]; % to test
 FilterFrequencyE=[1,3,10,20,0.99*NyF]; % to test
 for jj=1:length(FilterFrequencyI) 
     [Fa,Fb]=butter(2,[FilterFrequencyI(jj)/NyF FilterFrequencyE(jj)/NyF],'bandpass'); % Butterworse Filter with normalized frequency, 1=Nyquist
-    DATAF{ii,jj}=filtfilt(Fa,Fb,SIG{ii}); % acausal filterting
+    %DATAF{ii,jj}=filtfilt(Fa,Fb,SIG{ii}); % acausal filterting
+    DATAF{ii,jj}=l2filter(Fa,Fb,SIG{ii}); % acausal filterting
     ES(ii,jj)=log10(trapz(abs(hilbert(DATAF{ii,jj})))); % compute energy in several frequency band
     KurtoF(ii,jj)=kurtosis(DATAF{ii,jj});% Kurto in several Fband
 end

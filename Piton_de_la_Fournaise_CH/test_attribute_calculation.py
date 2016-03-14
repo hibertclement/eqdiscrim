@@ -18,15 +18,15 @@ def suite():
     suite.addTest(PythonMatlabTests('test_filter_coefs'))
     suite.addTest(PythonMatlabTests('test_filtering_data'))
     suite.addTest(PythonMatlabTests('test_spectrogram_calc'))
-    #suite.addTest(AttributeTests('test_polarization_synth'))
-    #suite.addTest(AttributeTests('test_attribute_values_0_11'))
-    #suite.addTest(AttributeTests('test_attribute_values_12_16'))
-    #suite.addTest(AttributeTests('test_attribute_values_17_21'))
-    #suite.addTest(AttributeTests('test_attribute_values_22'))
-    #suite.addTest(AttributeTests('test_attribute_values_23_32'))
-    #suite.addTest(AttributeTests('test_attribute_values_33_36'))
-    #suite.addTest(AttributeTests('test_attribute_values_37_39'))
-    #suite.addTest(AttributeTests('test_attribute_values_57_60'))
+    suite.addTest(AttributeTests('test_polarization_synth'))
+    suite.addTest(AttributeTests('test_attribute_values_0_11'))
+    suite.addTest(AttributeTests('test_attribute_values_12_16'))
+    suite.addTest(AttributeTests('test_attribute_values_17_21'))
+    suite.addTest(AttributeTests('test_attribute_values_22'))
+    suite.addTest(AttributeTests('test_attribute_values_23_32'))
+    suite.addTest(AttributeTests('test_attribute_values_33_36'))
+    suite.addTest(AttributeTests('test_attribute_values_37_39'))
+    suite.addTest(AttributeTests('test_attribute_values_57_60'))
 
     return suite
 
@@ -189,7 +189,8 @@ class PythonMatlabTests(unittest.TestCase):
         fdata_01 = lfilter(Fb, Fa, tr)
         fdata_02 = lfilter(Fb, Fa, fdata_01[::-1])
         fdata_02 = fdata_02[::-1]
-        fdata_03 = filtfilt(Fb, Fa, tr)
+        #fdata_03 = filtfilt(Fb, Fa, tr)
+        fdata_03 = at.l2filter(Fb, Fa, tr)
 
         # real (dirty) data
         st = read(os.path.join(datadir, 'events', 'event_01*HHZ*SAC'))
@@ -198,7 +199,8 @@ class PythonMatlabTests(unittest.TestCase):
         fdata_04 = lfilter(Fb, Fa, tr)
         fdata_05 = lfilter(Fb, Fa, fdata_04[::-1])
         fdata_05 = fdata_05[::-1]
-        fdata_06 = filtfilt(Fb, Fa, tr)
+        #fdata_06 = filtfilt(Fb, Fa, tr)
+        fdata_06 = at.l2filter(Fb, Fa, tr)
 
         # check lengths
         self.assertEqual(len(mat_fdata_01), len(fdata_01))
@@ -214,8 +216,8 @@ class PythonMatlabTests(unittest.TestCase):
         self.assertAlmostEqual(mat_fdata_02[0], fdata_02[0])
         self.assertAlmostEqual(mat_fdata_03[0], fdata_03[0])
         # check difference between two times one-pass and two-pass
-        self.assertAlmostEqual(mat_sum_diff, 0.0, 5)
-        self.assertAlmostEqual(py_sum_diff, 0.0, 5)
+        self.assertAlmostEqual(mat_sum_diff, 0.0)
+        self.assertAlmostEqual(py_sum_diff, 0.0)
         self.assertAlmostEqual(mat_sum_diff, py_sum_diff)
 
 
@@ -225,15 +227,14 @@ class PythonMatlabTests(unittest.TestCase):
 
         self.assertAlmostEqual(max(mat_fdata_04), max(fdata_04))
         self.assertAlmostEqual(max(mat_fdata_05), max(fdata_05))
-        # filtfilt on dirty data is only good to 1 decimal place
-        self.assertAlmostEqual(max(mat_fdata_06), max(fdata_06), 1)
+        self.assertAlmostEqual(max(mat_fdata_06), max(fdata_06))
         self.assertAlmostEqual(mat_fdata_04[0], fdata_04[0])
         self.assertAlmostEqual(mat_fdata_05[0], fdata_05[0])
-        #self.assertAlmostEqual(mat_fdata_06[0], fdata_06[0])
+        self.assertAlmostEqual(mat_fdata_06[0], fdata_06[0])
         # check difference between two times one-pass and two-pass
-        #self.assertAlmostEqual(mat_sum_diff, 0.0, 5)
-        #self.assertAlmostEqual(py_sum_diff, 0.0, 5)
-        #self.assertAlmostEqual(mat_sum_diff, py_sum_diff)
+        self.assertAlmostEqual(mat_sum_diff, 0.0)
+        self.assertAlmostEqual(py_sum_diff, 0.0)
+        self.assertAlmostEqual(mat_sum_diff, py_sum_diff)
 
         # test conclusion : use two single-pass filters for 2-pass filtering
         # in both python and matlab
