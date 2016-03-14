@@ -15,18 +15,18 @@ def suite():
     suite = unittest.TestSuite()
     suite.addTest(IOTests('test_read_catalog'))
     suite.addTest(IOTests('test_read_and_cut_events'))
-    suite.addTest(AttributeTests('test_filter_coefs'))
-    suite.addTest(AttributeTests('test_filtering_data'))
-    suite.addTest(AttributeTests('test_polarization_synth'))
-    suite.addTest(AttributeTests('test_spectrogram_calc'))
-    suite.addTest(AttributeTests('test_attribute_values_0_11'))
-    suite.addTest(AttributeTests('test_attribute_values_12_16'))
-    suite.addTest(AttributeTests('test_attribute_values_17_21'))
-    suite.addTest(AttributeTests('test_attribute_values_22'))
-    suite.addTest(AttributeTests('test_attribute_values_23_32'))
-    suite.addTest(AttributeTests('test_attribute_values_33_36'))
-    suite.addTest(AttributeTests('test_attribute_values_37_39'))
-    suite.addTest(AttributeTests('test_attribute_values_57_60'))
+    suite.addTest(PythonMatlabTests('test_filter_coefs'))
+    suite.addTest(PythonMatlabTests('test_filtering_data'))
+    suite.addTest(PythonMatlabTests('test_spectrogram_calc'))
+    #suite.addTest(AttributeTests('test_polarization_synth'))
+    #suite.addTest(AttributeTests('test_attribute_values_0_11'))
+    #suite.addTest(AttributeTests('test_attribute_values_12_16'))
+    #suite.addTest(AttributeTests('test_attribute_values_17_21'))
+    #suite.addTest(AttributeTests('test_attribute_values_22'))
+    #suite.addTest(AttributeTests('test_attribute_values_23_32'))
+    #suite.addTest(AttributeTests('test_attribute_values_33_36'))
+    #suite.addTest(AttributeTests('test_attribute_values_37_39'))
+    #suite.addTest(AttributeTests('test_attribute_values_57_60'))
 
     return suite
 
@@ -64,55 +64,7 @@ class IOTests(unittest.TestCase):
 
 class AttributeTests(unittest.TestCase):
 
-    def test_filter_coefs(self):
-
-        mat_fname = os.path.join(datadir, 'filter_coef.mat')
-        mat = loadmat(mat_fname)
-
-        Fb_mat = mat['Fa']
-        Fa_mat = mat['Fb']
-
-        NyF = 100.0 / 2.0
-        FFI = 0.1
-        FFE = 1.0
-
-        Fb_py, Fa_py = butter(2, [FFI/NyF, FFE/NyF], 'bandpass')
-
-        for i in xrange(len(Fb_py)):
-            self.assertAlmostEqual(Fb_mat[0, i], Fb_py[i])
-        for i in xrange(len(Fa_py)):
-            self.assertAlmostEqual(Fa_mat[0, i], Fa_py[i])
-
-    def test_filtering_data(self):
-
-        mat_fname = os.path.join(datadir, 'filtered_data.mat')
-        mat = loadmat(mat_fname)
-        filt_data_mat = mat['filt_data']
-
-        NyF = 100.0 / 2.0
-        FFI = 0.1
-        FFE = 1.0
-        Fb, Fa = butter(2, [FFI/NyF, FFE/NyF], btype='bandpass')
-
-        st = read(os.path.join(datadir, 'events', 'event_01*HHZ*SAC'))
-        tr = st[0].copy()
-        tr2 = st[0].copy()
-
-        # using python filtfilt
-        filt_data_py = filtfilt(Fb, Fa, st[0].data)
-        # using obspy
-        tr.filter('bandpass', freqmin=FFI, freqmax=FFE, corners=2, zerophase=True)
-        # using python lfilter (once forwards, once backwards)
-        tr2_filt1 = lfilter(Fb, Fa, tr2.data)
-        tr2_filt2 = lfilter(Fb, Fa, tr2_filt1[::-1])
-
-        self.assertAlmostEqual(len(filt_data_mat), len(tr.data))
-        self.assertAlmostEqual(max(tr.data), max(tr2_filt2), 5)
-        self.assertAlmostEqual(max(filt_data_mat)[0], max(tr2_filt2))
-        #self.assertAlmostEqual(max(filt_data_mat)[0], max(tr.data))
-        #self.assertAlmostEqual(len(filt_data_mat), len(filt_data_py))
-        #self.assertAlmostEqual(max(filt_data_mat)[0], max(filt_data_py))
-        
+       
     def setUp(self):
 
        # load attributes for first event
@@ -185,6 +137,107 @@ class AttributeTests(unittest.TestCase):
         self.assertAlmostEqual(dipP, mat['dipP'][0][0])
         self.assertAlmostEqual(Plani, mat['Plani'][0][0])
 
+
+class PythonMatlabTests(unittest.TestCase):
+
+    def test_filter_coefs(self):
+
+        mat_fname = os.path.join(datadir, 'filter_coef.mat')
+        mat = loadmat(mat_fname)
+
+        Fb_mat = mat['Fb'].flatten()
+        Fa_mat = mat['Fa'].flatten()
+
+        NyF = float(mat['NyF'].flatten()[0])
+        FFI = float(mat['FFI'].flatten()[0])
+        FFE = float(mat['FFE'].flatten()[0])
+
+        Fb_py, Fa_py = butter(2, [FFI/NyF, FFE/NyF], 'bandpass')
+
+        for i in xrange(len(Fb_py)):
+            self.assertAlmostEqual(Fb_mat[i], Fb_py[i])
+        for i in xrange(len(Fa_py)):
+            self.assertAlmostEqual(Fa_mat[i], Fa_py[i])
+
+    def test_filtering_data(self):
+
+        # load filter coefficients
+        mat_fname = os.path.join(datadir, 'filter_coef.mat')
+        mat = loadmat(mat_fname)
+
+        NyF = float(mat['NyF'].flatten()[0])
+        FFI = float(mat['FFI'].flatten()[0])
+        FFE = float(mat['FFE'].flatten()[0])
+
+        Fb, Fa = butter(2, [FFI/NyF, FFE/NyF], 'bandpass')
+
+        # load filtered data
+        mat_fname = os.path.join(datadir, 'filtered_data.mat')
+        mat = loadmat(mat_fname)
+
+        mat_fdata_01 = mat['fdata_01'].flatten()
+        mat_fdata_02 = mat['fdata_02'].flatten()
+        mat_fdata_03 = mat['fdata_03'].flatten()
+        mat_fdata_04 = mat['fdata_04'].flatten()
+        mat_fdata_05 = mat['fdata_05'].flatten()
+        mat_fdata_06 = mat['fdata_06'].flatten()
+
+        # synthetic (clean) data
+        st = read(os.path.join(datadir, 'IU*MXZ*sac'))
+        tr = st[0].copy()
+
+        fdata_01 = lfilter(Fb, Fa, tr)
+        fdata_02 = lfilter(Fb, Fa, fdata_01[::-1])
+        fdata_02 = fdata_02[::-1]
+        fdata_03 = filtfilt(Fb, Fa, tr)
+
+        # real (dirty) data
+        st = read(os.path.join(datadir, 'events', 'event_01*HHZ*SAC'))
+        tr = st[0].copy()
+
+        fdata_04 = lfilter(Fb, Fa, tr)
+        fdata_05 = lfilter(Fb, Fa, fdata_04[::-1])
+        fdata_05 = fdata_05[::-1]
+        fdata_06 = filtfilt(Fb, Fa, tr)
+
+        # check lengths
+        self.assertEqual(len(mat_fdata_01), len(fdata_01))
+
+        # check synthetic data
+        mat_sum_diff = np.sum(np.abs(mat_fdata_03 - mat_fdata_02))
+        py_sum_diff = np.sum(np.abs(fdata_03 - fdata_02))
+
+        self.assertAlmostEqual(max(mat_fdata_01), max(fdata_01))
+        self.assertAlmostEqual(max(mat_fdata_02), max(fdata_02))
+        self.assertAlmostEqual(max(mat_fdata_03), max(fdata_03))
+        self.assertAlmostEqual(mat_fdata_01[0], fdata_01[0])
+        self.assertAlmostEqual(mat_fdata_02[0], fdata_02[0])
+        self.assertAlmostEqual(mat_fdata_03[0], fdata_03[0])
+        # check difference between two times one-pass and two-pass
+        self.assertAlmostEqual(mat_sum_diff, 0.0, 5)
+        self.assertAlmostEqual(py_sum_diff, 0.0, 5)
+        self.assertAlmostEqual(mat_sum_diff, py_sum_diff)
+
+
+        # check real data
+        mat_sum_diff = np.sum(np.abs(mat_fdata_06 - mat_fdata_05))
+        py_sum_diff = np.sum(np.abs(fdata_06 - fdata_05))
+
+        self.assertAlmostEqual(max(mat_fdata_04), max(fdata_04))
+        self.assertAlmostEqual(max(mat_fdata_05), max(fdata_05))
+        # filtfilt on dirty data is only good to 1 decimal place
+        self.assertAlmostEqual(max(mat_fdata_06), max(fdata_06), 1)
+        self.assertAlmostEqual(mat_fdata_04[0], fdata_04[0])
+        self.assertAlmostEqual(mat_fdata_05[0], fdata_05[0])
+        #self.assertAlmostEqual(mat_fdata_06[0], fdata_06[0])
+        # check difference between two times one-pass and two-pass
+        #self.assertAlmostEqual(mat_sum_diff, 0.0, 5)
+        #self.assertAlmostEqual(py_sum_diff, 0.0, 5)
+        #self.assertAlmostEqual(mat_sum_diff, py_sum_diff)
+
+        # test conclusion : use two single-pass filters for 2-pass filtering
+        # in both python and matlab
+ 
     def test_spectrogram_calc(self):
 
         fname = os.path.join(datadir, 'IU*MXZ*sac')
@@ -225,6 +278,7 @@ class AttributeTests(unittest.TestCase):
         self.assertSequenceEqual(mat_spec.shape, spec.shape)
         for i in xrange(nc):
             self.assertAlmostEqual(mat_spec[ir, i], spec[ir, i])
+
 
 if __name__ == '__main__':
 
