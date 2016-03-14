@@ -1,15 +1,15 @@
-import unittest, os
+import unittest
+import os
 import numpy as np
-import pandas as pd
 from obspy.core import UTCDateTime, read
-from obspy.signal.filter import bandpass
 from scipy.io import loadmat
-from scipy.signal import butter, filtfilt, lfilter, spectrogram
+from scipy.signal import butter, lfilter, spectrogram
 
 import data_io as io
 import attributes as at
 
 datadir = 'test_data'
+
 
 def suite():
     suite = unittest.TestSuite()
@@ -23,7 +23,8 @@ def suite():
     suite.addTest(AttributeTests('test_attribute_values_12_16'))
     suite.addTest(AttributeTests('test_attribute_values_17_21'))
     suite.addTest(AttributeTests('test_attribute_values_22'))
-    suite.addTest(AttributeTests('test_attribute_values_23_32'))
+    suite.addTest(AttributeTests('test_attribute_values_23_30'))
+    suite.addTest(AttributeTests('test_attribute_values_31_32'))
     suite.addTest(AttributeTests('test_attribute_values_33_36'))
     suite.addTest(AttributeTests('test_attribute_values_37_39'))
     suite.addTest(AttributeTests('test_attribute_values_57_60'))
@@ -40,7 +41,7 @@ class IOTests(unittest.TestCase):
 
         nr, nc = cat.shape
         self.assertEqual(nr, 16)
-        self.assertAlmostEqual(cat[0, nc-1],3.96782204729149)
+        self.assertAlmostEqual(cat[0, nc-1], 3.96782204729149)
 
     def test_read_and_cut_events(self):
 
@@ -64,10 +65,9 @@ class IOTests(unittest.TestCase):
 
 class AttributeTests(unittest.TestCase):
 
-       
     def setUp(self):
 
-       # load attributes for first event
+        # load attributes for first event
         mat_fname = os.path.join(datadir, 'event01.mat')
         mat = loadmat(mat_fname)
         self.mat_array = mat['att']
@@ -77,48 +77,53 @@ class AttributeTests(unittest.TestCase):
 
         self.py_array = at.calculate_all_attributes(st)
 
-
     def test_attribute_values_0_11(self):
 
-         # start assertions
+        # start assertions
         self.assertSequenceEqual(self.mat_array.shape, self.py_array.shape)
 
         for i in xrange(12):
-            self.assertAlmostEqual(self.mat_array[0, i], self.py_array[0, i], 5)
+            self.assertAlmostEqual(self.mat_array[0, i], self.py_array[0, i],
+                                   5)
 
     def test_attribute_values_12_16(self):
 
         for i in np.arange(12, 17):
-            self.assertAlmostEqual(self.mat_array[0, i], self.py_array[0, i], 5)
+            self.assertAlmostEqual(self.mat_array[0, i], self.py_array[0, i])
 
     def test_attribute_values_17_21(self):
 
         for i in np.arange(17, 22):
-            self.assertAlmostEqual(self.mat_array[0, i], self.py_array[0, i], 5)
+            self.assertAlmostEqual(self.mat_array[0, i], self.py_array[0, i])
 
     def test_attribute_values_22(self):
 
-        self.assertAlmostEqual(self.mat_array[0, 22], self.py_array[0, 22], 5)
+        self.assertAlmostEqual(self.mat_array[0, 22], self.py_array[0, 22])
 
-    def test_attribute_values_23_32(self):
+    def test_attribute_values_23_30(self):
 
-        for i in np.arange(23, 33):
-            self.assertAlmostEqual(self.mat_array[0, i], self.py_array[0, i], 5)
+        for i in np.arange(23, 31):
+            self.assertAlmostEqual(self.mat_array[0, i], self.py_array[0, i])
+
+    def test_attribute_values_31_32(self):
+
+        for i in np.arange(31, 33):
+            self.assertAlmostEqual(self.mat_array[0, i], self.py_array[0, i])
 
     def test_attribute_values_33_36(self):
 
         for i in np.arange(33, 37):
-            self.assertAlmostEqual(self.mat_array[0, i], self.py_array[0, i], 5)
+            self.assertAlmostEqual(self.mat_array[0, i], self.py_array[0, i])
 
     def test_attribute_values_37_39(self):
 
         for i in np.arange(37, 40):
-            self.assertAlmostEqual(self.mat_array[0, i], self.py_array[0, i], 5)
+            self.assertAlmostEqual(self.mat_array[0, i], self.py_array[0, i])
 
     def test_attribute_values_57_60(self):
 
         for i in np.arange(57, 61):
-            self.assertAlmostEqual(self.mat_array[0, i], self.py_array[0, i], 5)
+            self.assertAlmostEqual(self.mat_array[0, i], self.py_array[0, i])
 
     def test_polarization_synth(self):
 
@@ -189,7 +194,7 @@ class PythonMatlabTests(unittest.TestCase):
         fdata_01 = lfilter(Fb, Fa, tr)
         fdata_02 = lfilter(Fb, Fa, fdata_01[::-1])
         fdata_02 = fdata_02[::-1]
-        #fdata_03 = filtfilt(Fb, Fa, tr)
+        # fdata_03 = filtfilt(Fb, Fa, tr)
         fdata_03 = at.l2filter(Fb, Fa, tr)
 
         # real (dirty) data
@@ -199,7 +204,7 @@ class PythonMatlabTests(unittest.TestCase):
         fdata_04 = lfilter(Fb, Fa, tr)
         fdata_05 = lfilter(Fb, Fa, fdata_04[::-1])
         fdata_05 = fdata_05[::-1]
-        #fdata_06 = filtfilt(Fb, Fa, tr)
+        # fdata_06 = filtfilt(Fb, Fa, tr)
         fdata_06 = at.l2filter(Fb, Fa, tr)
 
         # check lengths
@@ -220,7 +225,6 @@ class PythonMatlabTests(unittest.TestCase):
         self.assertAlmostEqual(py_sum_diff, 0.0)
         self.assertAlmostEqual(mat_sum_diff, py_sum_diff)
 
-
         # check real data
         mat_sum_diff = np.sum(np.abs(mat_fdata_06 - mat_fdata_05))
         py_sum_diff = np.sum(np.abs(fdata_06 - fdata_05))
@@ -237,8 +241,8 @@ class PythonMatlabTests(unittest.TestCase):
         self.assertAlmostEqual(mat_sum_diff, py_sum_diff)
 
         # test conclusion : use two single-pass filters for 2-pass filtering
-        # in both python and matlab
- 
+        # in both python and matlab, and not filtfilt
+
     def test_spectrogram_calc(self):
 
         fname = os.path.join(datadir, 'IU*MXZ*sac')
@@ -248,7 +252,6 @@ class PythonMatlabTests(unittest.TestCase):
         mat_fname = os.path.join(datadir, 'spec_test.mat')
         mat = loadmat(mat_fname)
         mat_spec = mat['spec']
-        mat_smooth_spec = mat['smooth_spec']
         mat_f = mat['F'].flatten()
         mat_t = mat['T'].flatten()
         mat_fft = mat['FFT'].flatten()
@@ -259,7 +262,7 @@ class PythonMatlabTests(unittest.TestCase):
         n2 = at.nextpow2(2*200-1)
 
         fft = np.fft.fft(st[0].data, n)
-        f, t, spec = spectrogram(st[0].data, fs=4.0, window='hamming',
+        f, t, spec = spectrogram(st[0].data, fs=sps, window='hamming',
                                  nperseg=200, nfft=n2, noverlap=90,
                                  scaling='density')
 
