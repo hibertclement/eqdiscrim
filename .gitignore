@@ -59,6 +59,7 @@ target/
 # figures
 *.png
 figures/
+figures
 
 # picled objects
 *.dat
@@ -73,3 +74,4 @@ figures/
 
 synthetic_data/
 *.m~
+
