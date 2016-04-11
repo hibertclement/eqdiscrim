@@ -189,3 +189,13 @@ def read_sihex_tidy(table_fname, header_fname):
         i = i+1
 
     return X, Xdict
+
+def write_sihex_tidy_excel(table, header, otimes, fname):
+
+    df = pd.DataFrame(table, columns = header)
+    df.insert(1, 'OriginTime', otimes)
+    writer = pd.ExcelWriter(fname, engine='xlsxwriter')
+    df.to_excel(writer, sheet_name='SiHex')
+    writer.save()
+
+
