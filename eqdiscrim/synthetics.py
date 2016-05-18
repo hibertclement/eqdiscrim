@@ -1,5 +1,6 @@
 import numpy as np
 from obspy.core import Trace
+from scipy.signal import sweep_poly
 
 
 def gen_gaussian_noise(dt, npts, amp):
@@ -8,7 +9,7 @@ def gen_gaussian_noise(dt, npts, amp):
     """
 
     # create noise vector
-    n_vect = np.random.randn(npts)*amp
+    n_vect = np.random.randn(npts) * amp
 
     # create corresponding obspy trace
     header = {'delta': dt, 'npts': npts, 'station': 'SYN', 'network': 'XX',
@@ -53,4 +54,16 @@ def modulate_trace_triangle(tr, imax_fraction, max_amp):
     # return modulated data
     return tr, modulation
     
-    
+def gen_sweep_poly(dt, npts, poly_coeffs = [0.05, -0.75, 2.5, 5.0]):
+
+    p = np.poly1d(poly_coeffs)
+    t = np.arange(npts) * dt
+    w = sweep_poly(t, p)
+
+    # create corresponding obspy trace
+    header = {'delta': dt, 'npts': npts, 'station': 'SYN', 'network': 'XX',
+              'channel': 'HHZ', 'location': '00'}
+    tr = Trace(data=w, header=header)
+ 
+    # return
+    return tr
