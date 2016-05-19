@@ -67,3 +67,25 @@ def gen_sweep_poly(dt, npts, poly_coeffs = [0.05, -0.75, 2.5, 5.0]):
  
     # return
     return tr
+
+def gen_repeat_signal(dt, npts, npts_sig, amp_sig, n_sig=3):
+
+    full_sig = np.zeros(npts)
+    lag = npts / (2*n_sig) - npts_sig / 2
+    step = npts / n_sig
+
+    t_sig = np.arange(npts_sig) * dt
+    T = (npts_sig-1) * dt
+    sig = np.sin(2 * np.pi / T * t_sig) * amp_sig
+
+    for i in xrange(n_sig):
+        i_start = i * step + lag
+        full_sig[i_start : i_start + npts_sig] = sig[:]
+        
+    # create corresponding obspy trace
+    header = {'delta': dt, 'npts': npts, 'station': 'SYN', 'network': 'XX',
+              'channel': 'HHZ', 'location': '00'}
+    tr = Trace(data=full_sig, header=header)
+
+    return tr
+
