@@ -3,6 +3,7 @@ import signal_proc as sp
 from scipy.stats import kurtosis, skew
 from scipy.signal import hilbert, find_peaks_cwt
 from obspy.signal.filter import envelope
+from obspy.signal.trigger import trigger_onset
 
 def get_AsDec(tr, env=None):
     
@@ -76,28 +77,47 @@ def get_CorrStuff(tr):
     npts = len(cor_smooth)
     max_cor = np.max(cor_smooth)
 
-    print '2'
-
     #TODO : try using obspy trigger to count peaks above min_peak_height
-    ipeaks = find_peaks_cwt(cor_smooth, np.arange(1, npts/2))
-    n_peaks = 0
-    for ip in ipeaks:
-        if cor_smooth[ip] > min_peak_height:
-            n_peaks += 1
+    itriggers = trigger_onset(cor_smooth, thres1=min_peak_height,
+                              thres2=min_peak_height)
+    n_peaks, n_bid = itriggers.shape
     CorPeakNumber = n_peaks
 
-    print '3'
     # integrate over bands
     ilag_0 = np.argmax(cor_smooth)+1
     ilag_third = ilag_0 + npts/6
 
-    print '4'
     # note that these integrals are flase really (dt is not correct)
     int1 = np.trapz(cor_smooth[ilag_0:ilag_third+1]/max_cor)
     int2 = np.trapz(cor_smooth[ilag_third:]/max_cor)
     int_ratio = int1 / int2
-    print '5'
 
     return CorPeakNumber, int_ratio
 
+def get_freq_band_stuff(tr, FFI=[0.1, 1, 3, 10, 20], FFE=None, corners=2):
+
+    # FFI gives the left (low-frequency) side of the butterworth filter to use
+    # FFE gives the right (high-frequency) side of the butterworth filter to use
+
+    sps = tr.stats.sampling_rate
+    dt = tr.stats.delta
+    NyF = sps / 2.
+
+    nf = len(FFI)
+    if FFE is None:
+        FFE = np.empty(nf, dtype=float)
+        FFE[0 : -1] = FFI[1 : nf]
+        FFE[-1] = 0.99 * NyF
+
+    ES = np.empty(nf, dtype=float)
+    KurtoF = np.empty(nf, dtype=float)
+
+    for j in xrange(nf):
+        tr_filt = tr.copy()
+        tr_filt.filter('bandpass', freqmin=FFI[j], freqmax=FFE[j],
+                       corners=corners)
+        ES[j] = 2 * np.log10(np.trapz(envelope(tr_filt.data), dx=dt))
+        KurtoF[j] = kurtosis(tr_filt.data, fisher=False)
+
+    return ES, KurtoF
 

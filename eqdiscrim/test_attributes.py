@@ -12,6 +12,7 @@ def suite():
     suite.addTest(SimpleTests('test_rapps'))
     suite.addTest(HigherStatsTests('test_signal_kurtosis'))
     suite.addTest(HigherStatsTests('test_signal_skew'))
+    suite.addTest(HigherStatsTests('test_KurtoF'))
     suite.addTest(AutoCorTests('test_peaks'))
 
     return suite
@@ -63,6 +64,9 @@ class HigherStatsTests(unittest.TestCase):
     def test_signal_skew(self):
         self.assertAlmostEqual(self.SkewnessSig, 0.0, 1)
 
+    def test_KurtoF(self):
+        ES, KurtoF = att.get_freq_band_stuff(self.tr)
+        self.assertAlmostEqual(np.mean(KurtoF), 3.0, 1)
 
 class AutoCorTests(unittest.TestCase):
 
@@ -77,7 +81,6 @@ class AutoCorTests(unittest.TestCase):
         self.CorrPeakNumber, self.INTRATIO = att.get_CorrStuff(self.tr)
 
     def test_peaks(self):
-        print self.INTRATIO
         self.assertEqual(self.CorrPeakNumber, 3)
 
 if __name__ == '__main__':

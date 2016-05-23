@@ -30,6 +30,19 @@ cor_smooth = sp.smooth(cor_env)
 max_cor = np.max(cor_smooth)
 cor_smooth2 = sp.smooth(cor_smooth/max_cor)
 
+NyF = 1/(2.0 * dt)
+sig3 = syn.gen_gaussian_noise(dt, npts, 100)
+FFI=[0.1, 1, 3, 10, 20]
+nf = len(FFI)
+FFE = np.empty(nf, dtype=float)
+FFE[0 : -1] = FFI[1 : nf]
+FFE[-1] = 0.99 * NyF
+corners = 2
+
+ES, KurtoF = att.get_freq_band_stuff(sig3)
+print ES
+print KurtoF
+
 
 plt.figure()
 plt.plot(t_vect, sig2.data)
@@ -46,6 +59,13 @@ plt.plot(t_vect_cor, cor)
 plt.plot(t_vect_cor, cor_env)
 plt.plot(t_vect_cor, cor_smooth)
 #plt.plot(t_vect_cor, cor_smooth2)
+
+plt.figure()
+plt.plot(t_vect, sig3.data)
+for j in xrange(nf):
+    tr_filt = sig3.copy()
+    tr_filt.filter('bandpass', freqmin=FFI[j], freqmax=FFE[j], corners=corners, zerophase=True)
+    plt.plot(t_vect, tr_filt.data)
 
 plt.show()
 
