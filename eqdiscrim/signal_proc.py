@@ -1,4 +1,5 @@
 import numpy as np
+from obspy.signal.trigger import trigger_onset
 
 def smooth(x,window_len=11,window='hanning'):
     """
@@ -42,3 +43,13 @@ def smooth(x,window_len=11,window='hanning'):
     return y[window_len/2+1:-(window_len/2-1)]  
 
 
+def nextpow2(i):
+    n = 1
+    while n < i:
+        n *= 2
+    return n
+
+def find_peaks(sig, thresh):
+    itriggers = trigger_onset(sig, thres1=thresh, thres2=thresh)
+    n_peaks, n_bid = itriggers.shape
+    return n_peaks, itriggers
