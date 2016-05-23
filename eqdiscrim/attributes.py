@@ -78,10 +78,7 @@ def get_CorrStuff(tr):
     max_cor = np.max(cor_smooth)
 
     #TODO : try using obspy trigger to count peaks above min_peak_height
-    itriggers = trigger_onset(cor_smooth, thres1=min_peak_height,
-                              thres2=min_peak_height)
-    n_peaks, n_bid = itriggers.shape
-    CorPeakNumber = n_peaks
+    CorPeakNumber, itriggers = sp.find_peaks(cor_smooth, min_peak_height)
 
     # integrate over bands
     ilag_0 = np.argmax(cor_smooth)+1
@@ -120,4 +117,74 @@ def get_freq_band_stuff(tr, FFI=[0.1, 1, 3, 10, 20], FFE=None, corners=2):
         KurtoF[j] = kurtosis(tr_filt.data, fisher=False)
 
     return ES, KurtoF
+
+def get_full_spectrum_stuff(tr):
+
+    sps = tr.stats.sampling_rate
+    NyF = sps / 2.0
+
+    data = tr.data
+    npts = tr.stats.npts
+    n = sp.nextpow2(2 * npts - 1)
+    df = n / 2 * NyF
+    Freq1 = np.linspace(0, NyF, df)
+
+    FFTdata = 2 * np.abs(np.fft.fft(data, n=n)) / float(npts * npts)
+    FFTsmooth = sp.smooth(FFTdata[0:len(FFTdata)/2])
+    FFTsmooth_norm = FFTsmooth / max(FFTsmooth)
+
+    MeanFFT = np.mean(FFTsmooth_norm)
+    MedianFFT = np.median(FFTsmooth_norm)
+    VarFFT = np.var(FFTsmooth_norm, ddof=1)
+    MaxFFT = np.max(FFTsmooth)
+    iMaxFFT = np.argmax(FFTsmooth)
+    FmaxFFT = Freq1[iMaxFFT]
+
+    xCenterFFT = np.sum((np.arange(len(FFTsmooth_norm))) *
+                        FFTsmooth_norm) / np.sum(FFTsmooth_norm)
+    i_xCenterFFT = int(np.round(xCenterFFT))
+
+    xCenterFFT_1quart = np.sum((np.arange(i_xCenterFFT+1)) *
+                               FFTsmooth_norm[0:i_xCenterFFT+1]) /\
+        np.sum(FFTsmooth_norm[0:i_xCenterFFT+1])
+    i_xCenterFFT_1quart = int(np.round(xCenterFFT_1quart))
+
+    xCenterFFT_3quart = np.sum((np.arange(len(FFTsmooth_norm) -
+                                         i_xCenterFFT)) *
+                              FFTsmooth_norm[i_xCenterFFT:]) /\
+        np.sum(FFTsmooth_norm[i_xCenterFFT:]) + i_xCenterFFT+1
+    i_xCenterFFT_3quart = int(np.round(xCenterFFT_3quart))
+
+    FCentroid = Freq1[i_xCenterFFT]
+    Fquart1 = Freq1[i_xCenterFFT_1quart]
+    Fquart3 = Freq1[i_xCenterFFT_3quart]
+
+    min_peak_height = 0.75
+    NpeakFFT, ipeaks = sp.find_peaks(FFTsmooth_norm, min_peak_height)
+
+    np, nb = ipeaks.shape
+    sum_peaks = 0.
+    for i in xrange(np):
+        sum_peaks += max(FFTsmooth_norm[ipeaks[i,0] : ipeaks[i, 1]])
+    MeanPeaksFFT = sum_peaks / float(n_peaks)
+
+    npts = len(FFTsmooth_norm)
+    # beware : integrals are bogus
+    E1FFT = np.trapz(FFTsmooth_norm[0:npts/4], dx=df)
+    E2FFT = np.trapz(FFTsmooth_norm[npts/4-1:2*npts/4], dx=df)
+    E3FFT = np.trapz(FFTsmooth_norm[2*npts/4-1:3*npts/4], dx=df)
+    E4FFT = np.trapz(FFTsmooth_norm[3*npts/4-1:npts], dx=df)
+
+    moment = np.empty(3, dtype=float)
+
+    for j in xrange(3):
+        moment[j] = np.sum(Freq1**j * FFTsmooth_norm[0:n/2]**2)
+    gamma1 = moment[1]/moment[0]
+    gamma2 = np.sqrt(moment[2]/moment[0])
+    gammas = np.sqrt(np.abs(gamma1[i]**2 - gamma2[i]**2))
+
+    return MeanFFT, MaxFFT, FmaxFFT, MedianFFT, VarFFT, FCentroid, Fquart1,\
+        Fquart3, NpeakFFT, MeanPeaksFFT, E1FFT, E2FFT, E3FFT, E4FFT, gamma1,\
+        gamma2, gammas
+
 
