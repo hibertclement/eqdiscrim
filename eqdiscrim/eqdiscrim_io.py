@@ -1,11 +1,18 @@
 # -*- coding: utf-8 -*-
 
+import os
 import locale
 import pytz
 import urllib
+import tempfile 
 import pandas as pd
 import numpy as np
-from obspy.core import UTCDateTime
+from obspy import UTCDateTime, read
+from obspy.fdsn import Client
+from datetime import timedelta
+
+# client = Client("http://eida.ipgp.fr")
+
 
 # Pandas version check
 from pkg_resources import parse_version
@@ -188,8 +195,80 @@ def read_MC3_dump_file(filename):
     data_frame[u'WINDOW_LENGTH'] = data_frame[u'WINDOW_LENGTH'].apply(locale.atof)
 
     # Convert WINDOW_START to datetime
-    data_frame[u'WINDOW_START'] = to_datetime(data_frame[u'WINDOW_START'])
+    # data_frame[u'WINDOW_START'] = to_datetime(data_frame[u'WINDOW_START'])
 
     return data_frame
 
 
+def get_webservice_data(net, sta, cha, starttime, endtime):
+    url = 'http://eida.ipgp.fr/fdsnws/dataselect/1/query?'
+    url = url + 'network=%s' % net
+    url = url + '&station=%s' % sta
+    url = url + '&channel=%s' % cha
+    url = url + '&starttime=%s' % starttime
+    url = url + '&endtime=%s' % endtime
+    url = url + '&nodata=404'
+
+    f_, fname = tempfile.mkstemp()
+    urllib.urlretrieve(url, fname)
+    
+    return fname
+    # st = client.get_waveforms(net, sta, '??', cha, starttime, endtime)
+
+    # return st
+
+
+def get_webservice_metadata(net, fname):
+    url = 'http://eida.ipgp.fr/fdsnws/station/1/query?'
+    url = url + 'network=%s' % net
+    url = url + '&level=response'
+    url = url + '&format=xml' 
+    url = url + '&nodata=404'
+
+    urllib.urlretrieve(url, fname)
+
+def get_data_from_catalog_entry(starttime, window_length, net, sta, cha, inv):
+
+    # calculate the window length needed to do proper tapering / filtering
+    # before deconvolution (add 20% to the length, 10% before and after)
+
+    pad_length = max(10., window_length * 1.2)
+
+    s_time = starttime - pad_length
+    e_time = starttime + window_length + pad_length
+
+    full_len = e_time - s_time
+
+    pre_filt = [0.005, 0.01, 35., 45.]
+
+    fname = get_webservice_data(net, sta, cha, s_time.isoformat(), e_time.isoformat())
+
+    try:
+        st = read(fname)
+
+    except TypeError:
+        _f = open(fname, 'r')
+        lines = _f.readlines()
+        _f.close()
+        os.unlink(fname)
+        print lines
+        return None
+        
+    os.unlink(fname)
+    st.detrend()
+    st.attach_response(inv)
+    st.remove_response(pre_filt=pre_filt)
+    st = st.slice(starttime, starttime + window_length)
+
+    return st
+
+def get_catalog_entry(catalog_df, i):
+    ev = catalog_df[i:i+1]
+    starttime = ev['WINDOW_START'].values[0]
+    window_length = ev['WINDOW_LENGTH'].values[0]
+    event_type = ev['EVENT_TYPE'].values[0]
+    analyst = ev['ANALYST'].values[0]
+
+    starttime_obspy = UTCDateTime(starttime)
+
+    return starttime_obspy, window_length, event_type, analyst
