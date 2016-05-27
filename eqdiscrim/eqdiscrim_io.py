@@ -8,7 +8,6 @@ import tempfile
 import pandas as pd
 import numpy as np
 from obspy import UTCDateTime, read
-from obspy.fdsn import Client
 from datetime import timedelta
 
 # client = Client("http://eida.ipgp.fr")
@@ -19,8 +18,6 @@ from pkg_resources import parse_version
 if parse_version(pd.__version__) != parse_version(u'0.18.0'):
     raise RuntimeError('Invalid pandas version')
 
-from catalyst.pandas.convert import to_bool, to_datetime, to_float
-from catalyst.pandas.headers import get_clean_names
 
 utc = pytz.utc
 END_TIME = UTCDateTime(2016, 1, 1)
@@ -158,38 +155,31 @@ def read_MC3_dump_file(filename):
         thousands=None, skipinitialspace=True, mangle_dupe_cols=False
     )
 
-    # Ensure stripping and uniqueness of column names
-    data_frame.columns = get_clean_names(data_frame.columns)
-
-    # Convert 8 to bool
-    valid_bools = {0: False, 1: True, 'false': False, 'f': False, 't': True, 'true': True}
-    data_frame[u'8'] = to_bool(data_frame[u'8'], valid_bools)
 
     # Delete columns: 2, 3, 4, and 5
-
-    columns = [u'2', u'3', u'4', u'5']
+    columns = [2, 3, 4, 5]
     data_frame.drop(columns, axis=1, inplace=True)
 
     # Delete column 7
-    data_frame.drop(u'7', axis=1, inplace=True)
+    data_frame.drop(7, axis=1, inplace=True)
 
     # Delete column 9
-    data_frame.drop(u'9', axis=1, inplace=True)
+    data_frame.drop(9, axis=1, inplace=True)
 
     # Rename 0 to "WINDOW_START"
-    data_frame.rename(columns={u'0': u'WINDOW_START'}, inplace=True)
+    data_frame.rename(columns={0: 'WINDOW_START'}, inplace=True)
 
     # Rename 1 to "WINDOW_LENGTH"
-    data_frame.rename(columns={u'1': u'WINDOW_LENGTH'}, inplace=True)
+    data_frame.rename(columns={1: 'WINDOW_LENGTH'}, inplace=True)
 
     # Rename 6 to "EVENT_TYPE"
-    data_frame.rename(columns={u'6': u'EVENT_TYPE'}, inplace=True)
+    data_frame.rename(columns={6: 'EVENT_TYPE'}, inplace=True)
 
     # Rename 8 to "LOCATED"
-    data_frame.rename(columns={u'8': u'LOCATED'}, inplace=True)
+    data_frame.rename(columns={8: 'LOCATED'}, inplace=True)
 
     # Rename 10 to "ANALYST"
-    data_frame.rename(columns={u'10': u'ANALYST'}, inplace=True)
+    data_frame.rename(columns={10: 'ANALYST'}, inplace=True)
 
     # Convert WINDOW_LENGTH to float
     data_frame[u'WINDOW_LENGTH'] = data_frame[u'WINDOW_LENGTH'].apply(locale.atof)
