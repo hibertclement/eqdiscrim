@@ -8,9 +8,10 @@ import tempfile
 import pandas as pd
 import numpy as np
 from obspy import UTCDateTime, read
+from obspy.clients.fdsn import Client
 from datetime import timedelta
 
-# client = Client("http://eida.ipgp.fr")
+# client = Client("http://ws.resif.fr")
 
 
 # Pandas version check
@@ -200,11 +201,11 @@ def get_webservice_data(net, sta, cha, starttime, endtime):
     url = url + '&nodata=404'
 
     f_, fname = tempfile.mkstemp()
+    os.close(f_)
     urllib.urlretrieve(url, fname)
     
     return fname
     # st = client.get_waveforms(net, sta, '??', cha, starttime, endtime)
-
     # return st
 
 

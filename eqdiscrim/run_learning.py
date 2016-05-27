@@ -1,9 +1,10 @@
 import eqdiscrim_io as io
 import attributes as att
 import pandas as pd
+import numpy as np
 import pickle
 import time
-from obspy import read_inventory, UTCDateTime
+from obspy import read_inventory
 
 do_get_metadata = False
 do_plot_examples = False
@@ -13,13 +14,20 @@ def get_data_and_attributes(catalog_df):
     n_events = len(catalog_df)
     for i in xrange(n_events):
         starttime, window_length, event_type, analyst = io.get_catalog_entry(catalog_df, i)
-        st = io.get_data_from_catalog_entry(starttime, window_length, 'PF', 'BON', '???', inv)
-        attributes, att_names = att.get_all_single_station_attributes(st)
-        if i  == 0:
-            df = pd.DataFrame(attributes, columns=att_names)
-        else:
-            df_tmp = pd.DataFrame(attributes, columns=att_names)
+        try:
+            st = io.get_data_from_catalog_entry(starttime, window_length, 'PF', 'BON', '???', inv)
+            attributes, att_names = att.get_all_single_station_attributes(st)
+            if i  == 0:
+                df = pd.DataFrame(attributes, columns=att_names)
+            else:
+                df_tmp = pd.DataFrame(attributes, columns=att_names)
+                df = df.append(df_tmp, ignore_index=True)
+        except IOError:
+            print 'Problem at %d' % i
+            nan = np.ones((1, len(att_names)))*np.nan
+            df_tmp = pd.DataFrame(nan, columns=att_names)
             df = df.append(df_tmp, ignore_index=True)
+            continue
     df_X = catalog_df.join(df)
     return df_X
  
@@ -73,7 +81,9 @@ if do_calc_attributes:
     start = time.time()
     df_X = get_data_and_attributes(test_df)
     end = time.time()
-    df_X.to_pickle(df_X_fname)
+    f_ = open(df_X_fname, 'w')
+    pickle.dump(df_X, f_)
+    f_.close()
     print "Time taken to get and process %d events : %.2f" % (len(df_X), end - start)
 else:
     start = time.time()
