@@ -8,7 +8,7 @@ from obspy import read_inventory
 
 do_get_metadata = False
 do_plot_examples = False
-do_calc_attributes = True
+do_calc_attributes = False
 
 def get_data_and_attributes(catalog_df):
     n_events = len(catalog_df)
