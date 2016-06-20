@@ -1,7 +1,12 @@
 import pickle
+import os
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
+
+figdir = 'Figures'
+if not os.path.exists(figdir):
+    os.mkdir(figdir)
 
 pd.set_option('mode.use_inf_as_null', True)
 
@@ -18,8 +23,7 @@ atts = X_df.columns[5:]
 for att_name in atts:
     print att_name
     fig = plt.figure()
-    som_df[att_name].apply(np.log).plot.hist(20)
     eff_df[att_name].apply(np.log).plot.hist(20)
+    som_df[att_name].apply(np.log).plot.hist(20)
     plt.title(att_name)
-    plt.savefig("%s.png" % att_name)
-    fig.close()
+    plt.savefig(os.path.join(figdir, "%s.png" % att_name))

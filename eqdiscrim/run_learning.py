@@ -4,18 +4,24 @@ import pandas as pd
 import numpy as np
 import pickle
 import time
-from obspy import read_inventory
+from obspy import read_inventory, UTCDateTime
 
+do_get_catalog = True
 do_get_metadata = False
 do_plot_examples = False
-do_calc_attributes = False
+do_calc_attributes = True
+
+starttime_cat = UTCDateTime(2014, 5, 3)
+endtime_cat = UTCDateTime(2014, 6, 20)
+
 
 def get_data_and_attributes(catalog_df):
     n_events = len(catalog_df)
     for i in xrange(n_events):
         starttime, window_length, event_type, analyst = io.get_catalog_entry(catalog_df, i)
+        print i, starttime.isoformat()
         try:
-            st = io.get_data_from_catalog_entry(starttime, window_length, 'PF', 'BON', '???', inv)
+            st = io.get_data_from_catalog_entry(starttime, window_length, 'PF', 'RVL', '???', inv)
             attributes, att_names = att.get_all_single_station_attributes(st)
             if i  == 0:
                 df = pd.DataFrame(attributes, columns=att_names)
@@ -31,15 +37,21 @@ def get_data_and_attributes(catalog_df):
     df_X = catalog_df.join(df)
     return df_X
  
+# get the catalog if you need to
+catalog_fname = 'MC3_dump.csv'
+if do_get_catalog:
+    print("Getting OVPF catalog between %s and %s" % (starttime_cat.isoformat(), endtime_cat.isoformat()))
+    io.get_OVPF_MC3_dump_file(starttime_cat, endtime_cat, catalog_fname)
 
 # first get metadata for all the stations
 response_fname = 'PF_response.xml'
 if do_get_metadata:
+    print("Getting station xml for PF network")
     io.get_webservice_metadata('PF', response_fname)
 inv = read_inventory(response_fname)
 
 # read catalog
-catalog_fname = '../static_catalogs/MC3_dump_OVPF_2014.csv'
+print("Reading OVPF catalog")
 catalog_df = io.read_MC3_dump_file(catalog_fname)
 som_df = catalog_df.query('EVENT_TYPE == "Sommital"')
 eff_df = catalog_df.query('EVENT_TYPE == "Effondrement"')
@@ -47,8 +59,6 @@ loc_df = catalog_df.query('EVENT_TYPE == "Local"')
 son_df = catalog_df.query('EVENT_TYPE == "Onde sonore"')
 tel_df = catalog_df.query('EVENT_TYPE == "Teleseisme"')
 phT_df = catalog_df.query('EVENT_TYPE == "Phase T"')
-# print catalog_df
-print som_df, eff_df, loc_df, son_df, tel_df, phT_df 
 print catalog_df['EVENT_TYPE'].value_counts()
 
 
