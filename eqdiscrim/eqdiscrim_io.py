@@ -19,9 +19,6 @@ from obspy.clients.arclink import Client
 client = Client(host="195.83.188.22", port="18001", user="sysop",
                 password="0vpf1pgP", institution="OVPF")
 
-# authorization_Valerie
-vf_base64string = base64.encodestring('%s:%s' % ("ferraz", "inizzarref"))[:-1]
-
 utc = pytz.utc
 END_TIME = UTCDateTime(2016, 1, 1)
 
@@ -147,30 +144,46 @@ def create_station_objects(X, names_list):
 
     return stadict
 
-def get_OVPF_MC3_dump_file(starttime, endtime, filename, evtype=None):
-    import base64
-
-    y1 = starttime.year
-    m1 = starttime.month
-    d1 = starttime.day
-
-    y2 = endtime.year
-    m2 = endtime.month
-    d2 = endtime.day
-
-    url = "http://pitondescalumets.ipgp.fr/cgi-bin/mc3.pl?"
-    url = url + "y1=%d&m1=%d&d1=%d" % (y1, m1, d1)
-    url = url + "y2=%d&m2=%d&d2=%d" % (y2, m2, d2)
-    url = url + "&dump=bul"
-    
-    if evtype is not None:
-        url = url + "type=%s" % evtype
+def get_OVPF_MC3_dump_file(s_time, e_time, filename, evtype=None):
 
     username = "ferraz"
     password = "inizzarref"
-    thepage = deal_with_authentication(url, username, password)
 
-    return thepage
+    starttime = s_time
+    endtime = starttime + 3600
+
+    all_data = ""
+    while endtime < e_time:
+
+        y1 = starttime.year
+        m1 = starttime.month
+        d1 = starttime.day
+
+        y2 = endtime.year
+        m2 = endtime.month
+        d2 = endtime.day
+
+
+        url = "http://pitondescalumets.ipgp.fr/cgi-bin/mc3.pl?"
+        url = url + "y1=%d&m1=%d&d1=%d" % (y1, m1, d1)
+        url = url + "y2=%d&m2=%d&d2=%d" % (y2, m2, d2)
+        url = url + "&dump=bul"
+    
+        if evtype is not None:
+            url = url + "type=%s" % evtype
+
+        thepage = deal_with_authentication(url, username, password)
+        all_data += thepage
+
+        starttime = endtime 
+        endtime = starttime + 3600
+        
+
+    f_ = open(filename, 'w')
+    f_.write("%s" % all_data)
+    f_.close()
+
+    return all_data
 
 def deal_with_authentication(theurl, username, password):
 
@@ -239,7 +252,7 @@ def deal_with_authentication(theurl, username, password):
 
 def read_MC3_dump_file(filename):
 
-    locale.setlocale(locale.LC_NUMERIC, 'fr_FR')
+    #locale.setlocale(locale.LC_NUMERIC, 'fr_FR')
 
     data_frame = pd.read_table(
         filename,
@@ -275,7 +288,7 @@ def read_MC3_dump_file(filename):
     data_frame.rename(columns={10: 'ANALYST'}, inplace=True)
 
     # Convert WINDOW_LENGTH to float
-    data_frame[u'WINDOW_LENGTH'] = data_frame[u'WINDOW_LENGTH'].apply(locale.atof)
+    # data_frame[u'WINDOW_LENGTH'] = data_frame[u'WINDOW_LENGTH'].apply(locale.atof)
 
     # Convert WINDOW_START to datetime
     # data_frame[u'WINDOW_START'] = to_datetime(data_frame[u'WINDOW_START'])
@@ -316,12 +329,12 @@ def get_webservice_metadata(net, fname):
 
     urllib.urlretrieve(url, fname)
 
-def get_data_from_catalog_entry(starttime, window_length, net, sta, cha, inv):
+def get_data_from_catalog_entry(starttime, window_length, net, sta, cha, inv, obs='OVPF'):
 
     # calculate the window length needed to do proper tapering / filtering
     # before deconvolution (add 20% to the length, 10% before and after)
 
-    pad_length = max(10., window_length * 1.2)
+    pad_length = max(60., window_length * 0.2)
 
     s_time = starttime - pad_length
     e_time = starttime + window_length + pad_length
@@ -330,23 +343,25 @@ def get_data_from_catalog_entry(starttime, window_length, net, sta, cha, inv):
 
     pre_filt = [0.005, 0.01, 35., 45.]
 
-    fname = get_webservice_data(net, sta, cha, s_time.isoformat(), e_time.isoformat())
-
-    try:
-        st = read(fname)
-
-    except TypeError:
-        _f = open(fname, 'r')
-        lines = _f.readlines()
-        _f.close()
+    if obs is 'OVPF':
+        st = get_OVPF_arclink_data(net, sta, "*", cha, s_time, e_time)
+    else:
+        fname = get_webservice_data(net, sta, cha, s_time.isoformat(), e_time.isoformat())
+        try:
+            st = read(fname)
+        except TypeError:
+            _f = open(fname, 'r')
+            lines = _f.readlines()
+            _f.close()
+            os.unlink(fname)
+            print lines
+            return None
         os.unlink(fname)
-        print lines
-        return None
-        
-    os.unlink(fname)
+
     st.detrend()
     st.attach_response(inv)
     st.remove_response(pre_filt=pre_filt)
+    st = st.slice(starttime, starttime + window_length)
     st = st.slice(starttime, starttime + window_length)
 
     return st
