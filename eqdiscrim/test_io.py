@@ -33,7 +33,9 @@ class SimpleTests(unittest.TestCase):
         starttime = UTCDateTime(2016, 1, 1, 0, 0, 0)
         endtime = starttime + 86400
 
-        dumpfile = io.get_OVPF_MC3_dump_file(starttime, endtime, "test_mc3.csv")
+        thepage = io.get_OVPF_MC3_dump_file(starttime, endtime, "test_mc3.csv")
+        
+        self.assertEqual(len(thepage), 18187)
 
 
 

@@ -7,12 +7,11 @@ import urllib
 import tempfile 
 import pandas as pd
 import numpy as np
+import base64
 from obspy import UTCDateTime, read
 from obspy.clients.fdsn import Client
 from datetime import timedelta
 from obspy.clients.arclink import Client
-
-# client = Client("http://ws.resif.fr")
 
 
 # serveur de données OVPF
@@ -20,11 +19,8 @@ from obspy.clients.arclink import Client
 client = Client(host="195.83.188.22", port="18001", user="sysop",
                 password="0vpf1pgP", institution="OVPF")
 
-# Pandas version check
-from pkg_resources import parse_version
-if parse_version(pd.__version__) != parse_version(u'0.18.0'):
-    raise RuntimeError('Invalid pandas version')
-
+# authorization_Valerie
+vf_base64string = base64.encodestring('%s:%s' % ("ferraz", "inizzarref"))[:-1]
 
 utc = pytz.utc
 END_TIME = UTCDateTime(2016, 1, 1)
@@ -152,6 +148,7 @@ def create_station_objects(X, names_list):
     return stadict
 
 def get_OVPF_MC3_dump_file(starttime, endtime, filename, evtype=None):
+    import base64
 
     y1 = starttime.year
     m1 = starttime.month
@@ -161,17 +158,84 @@ def get_OVPF_MC3_dump_file(starttime, endtime, filename, evtype=None):
     m2 = endtime.month
     d2 = endtime.day
 
-    url = "http://pitondescalumets/cgi-bin/mc3.pl?"
+    url = "http://pitondescalumets.ipgp.fr/cgi-bin/mc3.pl?"
     url = url + "y1=%d&m1=%d&d1=%d" % (y1, m1, d1)
     url = url + "y2=%d&m2=%d&d2=%d" % (y2, m2, d2)
-    url = url + "&location=2&dump=bul"
+    url = url + "&dump=bul"
     
     if evtype is not None:
         url = url + "type=%s" % evtype
 
-    print url
-# "http://pitondescalumets/cgi-bin/mc3.pl?y1=2012&m1=04&d1=01&y2=2012&m2=05&d2=09&location=2&dump=bul&type=REGION|VOLCSUMMIT|LOCAL"
-    urllib.urlretrieve(url, filename)
+    username = "ferraz"
+    password = "inizzarref"
+    thepage = deal_with_authentication(url, username, password)
+
+    return thepage
+
+def deal_with_authentication(theurl, username, password):
+
+    import urllib2
+    import sys
+    import re
+    import base64
+    from urlparse import urlparse
+
+    req = urllib2.Request(theurl)
+    try:
+        handle = urllib2.urlopen(req)
+    except IOError, e:
+        # here we *want* to fail
+        pass
+    else:
+        # If we don't fail then the page isn't protected
+        print "This page isn't protected by authentication."
+        sys.exit(1)
+
+    if not hasattr(e, 'code') or e.code != 401:
+        # we got an error - but not a 401 error
+        print "This page isn't protected by authentication."
+        print 'But we failed for another reason.'
+        sys.exit(1)
+
+    authline = e.headers['www-authenticate']
+    # this gets the www-authenticate line from the headers
+    # which has the authentication scheme and realm in it
+
+    authobj = re.compile(
+        r'''(?:\s*www-authenticate\s*:)?\s*(\w*)\s+realm=['"]([^'"]+)['"]''',
+        re.IGNORECASE)
+    # this regular expression is used to extract scheme and realm
+    matchobj = authobj.match(authline)
+
+    if not matchobj:
+        # if the authline isn't matched by the regular expression
+        # then something is wrong
+        print 'The authentication header is badly formed.'
+        print authline
+        sys.exit(1)
+
+    scheme = matchobj.group(1)
+    realm = matchobj.group(2)
+    # here we've extracted the scheme
+    # and the realm from the header
+    if scheme.lower() != 'basic':
+        print 'This example only works with BASIC authentication.'
+        sys.exit(1)
+
+    base64string = base64.encodestring(
+                '%s:%s' % (username, password))[:-1]
+    authheader =  "Basic %s" % base64string
+    req.add_header("Authorization", authheader)
+    try:
+        handle = urllib2.urlopen(req)
+    except IOError, e:
+        # here we shouldn't fail if the username/password is right
+        print "It looks like the username or password is wrong."
+        sys.exit(1)
+
+    thepage = handle.read()
+
+    return thepage
 
 def read_MC3_dump_file(filename):
 
