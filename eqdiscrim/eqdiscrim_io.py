@@ -10,6 +10,7 @@ import numpy as np
 from obspy import UTCDateTime, read
 from obspy.clients.fdsn import Client
 from datetime import timedelta
+from obspy.clients.arclink import Client
 
 # client = Client("http://ws.resif.fr")
 
@@ -208,6 +209,15 @@ def get_webservice_data(net, sta, cha, starttime, endtime):
     # st = client.get_waveforms(net, sta, '??', cha, starttime, endtime)
     # return st
 
+def get_OVPF_arclink_data(net, sta, locid, cha, starttime, endtime):
+
+    # serveur de données OVPF
+    # pitonmanuel 195.83.188.22
+    client = Client(host="195.83.188.22", port="18001", user="sysop",
+                    password="0vpf1pgP", institution="OVPF")
+    st = client.get_waveforms(net, sta, locid, cha, starttime, endtime)
+
+    return st
 
 def get_webservice_metadata(net, fname):
     url = 'http://eida.ipgp.fr/fdsnws/station/1/query?'
