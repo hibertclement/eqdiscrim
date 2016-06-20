@@ -151,6 +151,28 @@ def create_station_objects(X, names_list):
 
     return stadict
 
+def get_OVPF_MC3_dump_file(starttime, endtime, filename, evtype=None):
+
+    y1 = starttime.year
+    m1 = starttime.month
+    d1 = starttime.day
+
+    y2 = endtime.year
+    m2 = endtime.month
+    d2 = endtime.day
+
+    url = "http://pitondescalumets/cgi-bin/mc3.pl?"
+    url = url + "y1=%d&m1=%d&d1=%d" % (y1, m1, d1)
+    url = url + "y2=%d&m2=%d&d2=%d" % (y2, m2, d2)
+    url = url + "&location=2&dump=bul"
+    
+    if evtype is not None:
+        url = url + "type=%s" % evtype
+
+    print url
+# "http://pitondescalumets/cgi-bin/mc3.pl?y1=2012&m1=04&d1=01&y2=2012&m2=05&d2=09&location=2&dump=bul&type=REGION|VOLCSUMMIT|LOCAL"
+    urllib.urlretrieve(url, filename)
+
 def read_MC3_dump_file(filename):
 
     locale.setlocale(locale.LC_NUMERIC, 'fr_FR')
@@ -219,6 +241,7 @@ def get_OVPF_arclink_data(net, sta, locid, cha, starttime, endtime):
     st = client.get_waveforms(net, sta, locid, cha, starttime, endtime)
 
     return st
+
 
 def get_webservice_metadata(net, fname):
     url = 'http://eida.ipgp.fr/fdsnws/station/1/query?'

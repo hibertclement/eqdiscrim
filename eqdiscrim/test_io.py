@@ -9,6 +9,7 @@ from obspy import UTCDateTime
 def suite():
     suite = unittest.TestSuite()
     suite.addTest(SimpleTests('test_OVPF_arclink'))
+    suite.addTest(SimpleTests('test_OVPF_dump'))
 
     return suite
     
@@ -27,6 +28,12 @@ class SimpleTests(unittest.TestCase):
 
         self.assertEqual(st[0].stats.npts, npts)
 
+    def test_OVPF_dump(self):
+
+        starttime = UTCDateTime(2016, 1, 1, 0, 0, 0)
+        endtime = starttime + 86400
+
+        dumpfile = io.get_OVPF_MC3_dump_file(starttime, endtime, "test_mc3.csv")
 
 
 
