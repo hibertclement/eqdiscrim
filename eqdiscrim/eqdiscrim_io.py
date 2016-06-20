@@ -14,11 +14,6 @@ from datetime import timedelta
 from obspy.clients.arclink import Client
 
 
-# serveur de données OVPF
-# pitonmanuel 195.83.188.22
-client = Client(host="195.83.188.22", port="18001", user="sysop",
-                password="0vpf1pgP", institution="OVPF")
-
 utc = pytz.utc
 END_TIME = UTCDateTime(2016, 1, 1)
 
@@ -252,7 +247,7 @@ def deal_with_authentication(theurl, username, password):
 
 def read_MC3_dump_file(filename):
 
-    #locale.setlocale(locale.LC_NUMERIC, 'fr_FR')
+    locale.setlocale(locale.LC_NUMERIC, 'fr_FR')
 
     data_frame = pd.read_table(
         filename,
@@ -288,7 +283,7 @@ def read_MC3_dump_file(filename):
     data_frame.rename(columns={10: 'ANALYST'}, inplace=True)
 
     # Convert WINDOW_LENGTH to float
-    # data_frame[u'WINDOW_LENGTH'] = data_frame[u'WINDOW_LENGTH'].apply(locale.atof)
+    data_frame[u'WINDOW_LENGTH'] = data_frame[u'WINDOW_LENGTH'].apply(locale.atof)
 
     # Convert WINDOW_START to datetime
     # data_frame[u'WINDOW_START'] = to_datetime(data_frame[u'WINDOW_START'])
@@ -315,10 +310,14 @@ def get_webservice_data(net, sta, cha, starttime, endtime):
 
 def get_OVPF_arclink_data(net, sta, locid, cha, starttime, endtime):
 
+    # serveur de données OVPF
+    # pitonmanuel 195.83.188.22
+    client = Client(host="195.83.188.22", port="18001", user="sysop",
+                    password="0vpf1pgP", institution="OVPF")
+
     st = client.get_waveforms(net, sta, locid, cha, starttime, endtime)
 
     return st
-
 
 def get_webservice_metadata(net, fname):
     url = 'http://eida.ipgp.fr/fdsnws/station/1/query?'
@@ -329,7 +328,8 @@ def get_webservice_metadata(net, fname):
 
     urllib.urlretrieve(url, fname)
 
-def get_data_from_catalog_entry(starttime, window_length, net, sta, cha, inv, obs='OVPF'):
+def get_data_from_catalog_entry(starttime, window_length, net, sta, cha, inv,
+                                obs='OVPF'):
 
     # calculate the window length needed to do proper tapering / filtering
     # before deconvolution (add 20% to the length, 10% before and after)

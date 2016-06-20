@@ -4,24 +4,32 @@ import pandas as pd
 import numpy as np
 import pickle
 import time
+import os
 from obspy import read_inventory, UTCDateTime
 
-do_get_catalog = True
+do_get_catalog = False
 do_get_metadata = False
-do_plot_examples = False
 do_calc_attributes = True
 
 starttime_cat = UTCDateTime(2014, 5, 3)
 endtime_cat = UTCDateTime(2014, 6, 20)
 
+#station_names = ["RVL", "FLR", "BOR"]
+station_names = ["BON"]
+att_dir = "Attributes"
 
-def get_data_and_attributes(catalog_df):
+if not os.path.exists(att_dir):
+    os.mkdir(att_dir)
+
+def get_data_and_attributes(catalog_df, staname, obs='OVPF'):
     n_events = len(catalog_df)
     for i in xrange(n_events):
-        starttime, window_length, event_type, analyst = io.get_catalog_entry(catalog_df, i)
+        starttime, window_length, event_type, analyst = \
+            io.get_catalog_entry(catalog_df, i)
         print i, starttime.isoformat()
         try:
-            st = io.get_data_from_catalog_entry(starttime, window_length, 'PF', 'RVL', '???', inv)
+            st = io.get_data_from_catalog_entry(starttime, window_length, 'PF',
+                                                staname, '???', inv, obs=obs)
             attributes, att_names = att.get_all_single_station_attributes(st)
             if i  == 0:
                 df = pd.DataFrame(attributes, columns=att_names)
@@ -40,7 +48,8 @@ def get_data_and_attributes(catalog_df):
 # get the catalog if you need to
 catalog_fname = 'MC3_dump.csv'
 if do_get_catalog:
-    print("Getting OVPF catalog between %s and %s" % (starttime_cat.isoformat(), endtime_cat.isoformat()))
+    print("Getting OVPF catalog between %s and %s" %
+          (starttime_cat.isoformat(), endtime_cat.isoformat()))
     io.get_OVPF_MC3_dump_file(starttime_cat, endtime_cat, catalog_fname)
 
 # first get metadata for all the stations
@@ -62,46 +71,36 @@ phT_df = catalog_df.query('EVENT_TYPE == "Phase T"')
 print catalog_df['EVENT_TYPE'].value_counts()
 
 
-#  get and plot selected events
-if do_plot_examples:
-    sel_events = [
-        [558, 'example_som.png'],
-        [833, 'example_eff.png'],
-        [262, 'example_loc.png'],
-        [727, 'example_son.png'],
-        [4065, 'example_tel.png'],
-        [502, 'example_phT.png'],
-    ]
-
-    # get data and plot
-    start = time.time()
-    for ev in sel_events:
-        starttime, window_length, event_type, analyst = io.get_catalog_entry(catalog_df, ev[0])
-        # get the data (deconvolved)
-        st = io.get_data_from_catalog_entry(starttime, window_length, 'PF', 'BON', '???', inv)
-        print(st.__str__(extended=True))
-        st.plot(outfile=ev[1])
-    end = time.time()
-    print "Time taken to get, deconvolve and plot selected data %.2f" % (end-start)
+##  get and plot selected events
+#if do_plot_examples:
+#    sel_events = [
+#        [558, 'example_som.png'],
+#        [833, 'example_eff.png'],
+#        [262, 'example_loc.png'],
+#        [727, 'example_son.png'],
+#        [4065, 'example_tel.png'],
+#        [502, 'example_phT.png'],
+#    ]
+#
+#    # get data and plot
+#    start = time.time()
+#    for ev in sel_events:
+#        starttime, window_length, event_type, analyst = io.get_catalog_entry(catalog_df, ev[0])
+#        # get the data (deconvolved)
+#        st = io.get_data_from_catalog_entry(starttime, window_length, 'PF', 'BON', '???', inv)
+#        print(st.__str__(extended=True))
+#        st.plot(outfile=ev[1])
+#    end = time.time()
+#    print "Time taken to get, deconvolve and plot selected data %.2f" % (end-start)
 
 # get data and calculate attributes
-df_X_fname = 'X_dataframe.dat'
-test_df = catalog_df
-if do_calc_attributes:
+for s in station_names: 
+    df_X_fname = os.path.join(att_dir, 'X_%s_dataframe.dat' % s)
     start = time.time()
-    df_X = get_data_and_attributes(test_df)
+    df_X = get_data_and_attributes(catalog_df, s, 'IPGP')
     end = time.time()
     f_ = open(df_X_fname, 'w')
     pickle.dump(df_X, f_)
     f_.close()
-    print "Time taken to get and process %d events : %.2f" % (len(df_X), end - start)
-else:
-    start = time.time()
-    f_ = open(df_X_fname, 'r')
-    df_X = pickle.load(f_)
-    f_.close()
-    end = time.time()
-    print "Time taken to read table for %d events : %.2f" % (len(df_X), end - start)
-    
-# do learning
-print df_X.tail()
+    print "Time taken to get and process %d events at %s : %.2f" % (len(df_X),
+                                                              s, end - start)
