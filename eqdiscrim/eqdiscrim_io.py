@@ -15,6 +15,11 @@ from obspy.clients.arclink import Client
 # client = Client("http://ws.resif.fr")
 
 
+# serveur de données OVPF
+# pitonmanuel 195.83.188.22
+client = Client(host="195.83.188.22", port="18001", user="sysop",
+                password="0vpf1pgP", institution="OVPF")
+
 # Pandas version check
 from pkg_resources import parse_version
 if parse_version(pd.__version__) != parse_version(u'0.18.0'):
@@ -211,10 +216,6 @@ def get_webservice_data(net, sta, cha, starttime, endtime):
 
 def get_OVPF_arclink_data(net, sta, locid, cha, starttime, endtime):
 
-    # serveur de données OVPF
-    # pitonmanuel 195.83.188.22
-    client = Client(host="195.83.188.22", port="18001", user="sysop",
-                    password="0vpf1pgP", institution="OVPF")
     st = client.get_waveforms(net, sta, locid, cha, starttime, endtime)
 
     return st
