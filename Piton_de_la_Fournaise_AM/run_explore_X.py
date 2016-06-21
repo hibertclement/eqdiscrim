@@ -15,7 +15,7 @@ station_names = ["RVL", "FLR", "BOR", "BON", "SNE", "FJS", "CSS", "GPS", "GPN", 
 att_dir = "Attributes"
 
 best_atts = list(['FCentroid', 'gammas', 'DurOverAmp', 'Fquart3', 'Duration',
-             'gamma1', 'Fquart1')
+             'gamma1', 'Fquart1'])
 for sta in station_names:
     fnames = glob.glob(os.path.join(att_dir, 'X_%s_*_dataframe.dat' % (sta)))
     if len(fnames) == 0:
@@ -30,6 +30,7 @@ for sta in station_names:
             X_df_full = X_df_full.append(X_df, ignore_index=False)
 
     X_df_full.dropna(inplace=True)
+    print X_df_full.head()
     print sta
     print X_df_full['EVENT_TYPE'].value_counts()
     eff_df = X_df_full[X_df_full['EVENT_TYPE'] == 'Effondrement']
@@ -70,6 +71,21 @@ for sta in station_names:
                 plt.title("%s : %s vs %s" % (sta, best_atts[j], best_atts[i]))
                 plt.savefig(os.path.join(figdir, "%s_%s_%s_scatter.png" % (sta,
                                          best_atts[j], best_atts[i])))
+
+    # time plots
+    for i in xrange(n_best):
+        print "Time plot", sta, best_atts[i]
+        fig = plt.figure()
+        ax = eff_df[best_atts[i]].plot(color='b', alpha=0.5, label='EFF',
+                    logy=True)
+        som_df[best_atts[i]].plot(color='g', alpha=0.5, label='SOM', logy=True,
+               ax=ax)
+        loc_df[best_atts[i]].plot(color='r', alpha=0.5, label='LOC', logy=True,
+               ax=ax)
+        plt.xlabel('Event number')
+        plt.ylabel(best_atts[i])
+        plt.title("%s : %s vs date" % (sta, best_atts[i]))
+        plt.savefig(os.path.join(figdir, "%s_%s_date.png" % (sta, best_atts[i])))
 
     print "Doing radviz plot"
     best_atts.append('EVENT_TYPE')
