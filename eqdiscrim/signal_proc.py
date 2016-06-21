@@ -1,7 +1,7 @@
 import numpy as np
 from obspy.signal.trigger import trigger_onset
 
-def smooth(x,window_len=11,window='hanning'):
+def smooth(x, window_len=11, window='hanning'):
     """
     smooth the data using a window with requested size.
         

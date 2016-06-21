@@ -34,8 +34,6 @@ def get_data_and_attributes(catalog_df, staname, start_i=0, n_max=None, obs='OVP
         try:
             st = io.get_data_from_catalog_entry(starttime, window_length, 'PF',
                                                 staname, '???', inv, obs=obs)
-            if st is None:
-                raise IOError
             attributes, att_names = att.get_all_single_station_attributes(st)
             if i  == 0:
                 df = pd.DataFrame(attributes, columns=att_names, index=[ii])

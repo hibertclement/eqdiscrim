@@ -7,6 +7,7 @@ from obspy.signal.filter import envelope
 def get_all_single_station_attributes(st):
 
     NaN_value = -12345.0
+    min_length = 11
 
     att_names = list(['AsDec', 'Duration', 'RappMaxMean', 'RappMaxMedian',
                       'RappMaxStd', 'KurtoEnv', 'KurtoSig', 'SkewnessEnv',
@@ -17,6 +18,17 @@ def get_all_single_station_attributes(st):
                       'FCentroid', 'Fquart1', 'Fquart3', 'NpeakFFT',
                       'MeanPeaksFFT', 'E1FFT', 'E2FFT', 'E3FFT', 'E4FFT',
                       'gamma1', 'gamma2', 'gammas', 'MaxAmp', 'DurOverAmp'])
+
+    if st is None or len(st) == 0:
+        # return names of attributes and NaN values
+        att = np.ones((1, len(att_names)), dtype=float) * np.nan
+        return att, att_names
+
+    if st[0].stats.npts < min_length:
+        # return names of attributes and NaN values
+        att = np.ones((1, len(att_names)), dtype=float) * np.nan
+        return att, att_names
+
     # create the amplitude trace and its envelope
     if len(st) == 3:
         att_names.extend(list(['rectilinP', 'azimuthP', 'dipP', 'Plani']))
