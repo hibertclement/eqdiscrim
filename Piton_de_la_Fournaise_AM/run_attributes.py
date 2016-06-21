@@ -7,12 +7,11 @@ import time
 import os
 from obspy import read_inventory, UTCDateTime
 
-do_get_catalog = False
 do_get_metadata = False
 do_calc_attributes = True
 
-starttime_cat = UTCDateTime(2014, 5, 3)
-endtime_cat = UTCDateTime(2014, 6, 20)
+# catalog name
+catalog_fname = 'MC3_dump_2012_2016.csv'
 
 #station_names = ["RVL", "FLR", "BOR"]
 station_names = ["BON"]
@@ -21,12 +20,16 @@ att_dir = "Attributes"
 if not os.path.exists(att_dir):
     os.mkdir(att_dir)
 
-def get_data_and_attributes(catalog_df, staname, obs='OVPF'):
-    n_events = len(catalog_df)
+def get_data_and_attributes(catalog_df, staname, start_i=0, n_max=None, obs='OVPF'):
+    if n_max is None:
+        n_events = len(catalog_df)
+    else:
+        n_events = n_max
     for i in xrange(n_events):
+        ii = i + start_i
         starttime, window_length, event_type, analyst = \
-            io.get_catalog_entry(catalog_df, i)
-        print i, starttime.isoformat()
+            io.get_catalog_entry(catalog_df, ii)
+        print ii, starttime.isoformat()
         try:
             st = io.get_data_from_catalog_entry(starttime, window_length, 'PF',
                                                 staname, '???', inv, obs=obs)
@@ -45,13 +48,6 @@ def get_data_and_attributes(catalog_df, staname, obs='OVPF'):
     df_X = catalog_df.join(df)
     return df_X
  
-# get the catalog if you need to
-catalog_fname = 'MC3_dump.csv'
-if do_get_catalog:
-    print("Getting OVPF catalog between %s and %s" %
-          (starttime_cat.isoformat(), endtime_cat.isoformat()))
-    io.get_OVPF_MC3_dump_file(starttime_cat, endtime_cat, catalog_fname)
-
 # first get metadata for all the stations
 response_fname = 'PF_response.xml'
 if do_get_metadata:
@@ -70,6 +66,7 @@ tel_df = catalog_df.query('EVENT_TYPE == "Teleseisme"')
 phT_df = catalog_df.query('EVENT_TYPE == "Phase T"')
 print catalog_df['EVENT_TYPE'].value_counts()
 
+exit()
 
 ##  get and plot selected events
 #if do_plot_examples:
@@ -97,7 +94,7 @@ print catalog_df['EVENT_TYPE'].value_counts()
 for s in station_names: 
     df_X_fname = os.path.join(att_dir, 'X_%s_dataframe.dat' % s)
     start = time.time()
-    df_X = get_data_and_attributes(catalog_df, s, 'IPGP')
+    df_X = get_data_and_attributes(catalog_df, s, 'OVPF')
     end = time.time()
     f_ = open(df_X_fname, 'w')
     pickle.dump(df_X, f_)

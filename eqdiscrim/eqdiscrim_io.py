@@ -247,7 +247,8 @@ def deal_with_authentication(theurl, username, password):
 
 def read_MC3_dump_file(filename):
 
-    locale.setlocale(locale.LC_NUMERIC, 'fr_FR')
+    if os.environ["LANG"] is "r_FR.UTF-8":
+        locale.setlocale(locale.LC_NUMERIC, 'fr_FR')
 
     data_frame = pd.read_table(
         filename,
@@ -283,10 +284,8 @@ def read_MC3_dump_file(filename):
     data_frame.rename(columns={10: 'ANALYST'}, inplace=True)
 
     # Convert WINDOW_LENGTH to float
-    data_frame[u'WINDOW_LENGTH'] = data_frame[u'WINDOW_LENGTH'].apply(locale.atof)
-
-    # Convert WINDOW_START to datetime
-    # data_frame[u'WINDOW_START'] = to_datetime(data_frame[u'WINDOW_START'])
+    if os.environ["LANG"] is "r_FR.UTF-8":
+        data_frame[u'WINDOW_LENGTH'] = data_frame[u'WINDOW_LENGTH'].apply(locale.atof)
 
     return data_frame
 
