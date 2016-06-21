@@ -27,24 +27,19 @@ for sta in station_names:
         else:
             X_df_full = X_df_full.append(X_df, ignore_index=False)
 
+    X_df_full.dropna(inplace=True)
     print sta
     print X_df_full['EVENT_TYPE'].value_counts()
     eff_df = X_df_full[X_df_full['EVENT_TYPE'] == 'Effondrement']
     som_df = X_df_full[X_df_full['EVENT_TYPE'] == 'Sommital']
-    prof_df = X_df_full[X_df_full['EVENT_TYPE'] == 'Profond']
     loc_df = X_df_full[X_df_full['EVENT_TYPE'] == 'Local']
-    reg_df = X_df_full[X_df_full['EVENT_TYPE'] == 'Regional']
-    tel_df = X_df_full[X_df_full['EVENT_TYPE'] == 'Teleseisme']
 
     atts = X_df_full.columns[5:]
     for att_name in atts:
         print att_name
         fig = plt.figure()
-        eff_df[att_name].apply(np.log).plot.hist(20)
-        som_df[att_name].apply(np.log).plot.hist(20)
-        prof_df[att_name].apply(np.log).plot.hist(20)
-        loc_df[att_name].apply(np.log).plot.hist(20)
-        reg_df[att_name].apply(np.log).plot.hist(20)
-        tel_df[att_name].apply(np.log).plot.hist(20)
+        eff_df[att_name].apply(np.log).plot.hist(20, alpha=0.5, normed=True)
+        som_df[att_name].apply(np.log).plot.hist(20, alpha=0.5, normed=True)
+        loc_df[att_name].apply(np.log).plot.hist(20, alpha=0.5, normed=True)
         plt.title(att_name)
         plt.savefig(os.path.join(figdir, "%s_%s.png" % (sta, att_name)))

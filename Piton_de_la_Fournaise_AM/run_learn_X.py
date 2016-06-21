@@ -6,6 +6,7 @@ import pandas as pd
 import matplotlib.pyplot as plt
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.cross_validation import cross_val_score
+from sklearn.metrics import confusion_matrix, accuracy_score
 
 figdir = 'Figures'
 if not os.path.exists(figdir):
@@ -56,17 +57,40 @@ for sta in station_names:
     loc_indexes =  np.random.permutation(loc_df.index.values)[0 : min(num_train, n)]
 
     # put them all together
-    all_indexes = np.concatenate([eff_indexes, som_indexes, loc_indexes])
+    all_train_indexes = np.concatenate([eff_indexes, som_indexes, loc_indexes])
+    all_test_indexes = np.concatenate([eff_df.index.values, som_df.index.values, loc_df.index.values])
 
     # extract the training set
-    train_df = X_df_full_clean.ix[all_indexes]
+    train_df = X_df_full_clean.ix[all_train_indexes]
     print train_df['EVENT_TYPE'].value_counts()
     X_train = train_df[att_list].values
     Y_train = train_df['EVENT_TYPE'].values
 
+    test_df = X_df_full_clean.ix[all_test_indexes]
+    X_test = test_df[att_list].values
+    Y_test = test_df['EVENT_TYPE'].values
 
     # do a first classification
     clf = RandomForestClassifier(n_estimators = 10)
     clf = clf.fit(X_train, Y_train)
+    # score on training set
+    Y_pred = clf.predict(X_train)
     scores = cross_val_score(clf, X_train, Y_train, cv=5)
-    print "Accuracy: %0.2f (+/- %0.2f)" % (scores.mean(), scores.std() * 2)
+    cm = confusion_matrix(Y_train, Y_pred)
+    print "Training accuracy: %0.2f (+/- %0.2f)" % (scores.mean(), scores.std() * 2)
+    print cm
+    # score on test set
+    Y_pred = clf.predict(X_test)
+    cm = confusion_matrix(Y_test, Y_pred)
+    print "Testing accuracy: %0.2f" % (accuracy_score(Y_test, Y_pred))
+    print cm
+
+    # print importances
+    importances = clf.feature_importances_
+    std = np.std([tree.feature_importances_ for tree in clf.estimators_], axis=0)
+    indices = np.argsort(importances)[::-1]
+
+    print("Feature ranking:")
+    for f in xrange(len(att_list)):
+        print("Feature %d : %s (%.2f percent)" % (indices[f], att_list[indices[f]], importances[indices[f]]*100))
+    
