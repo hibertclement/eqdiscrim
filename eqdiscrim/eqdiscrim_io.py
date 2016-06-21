@@ -304,8 +304,6 @@ def get_webservice_data(net, sta, cha, starttime, endtime):
     urllib.urlretrieve(url, fname)
     
     return fname
-    # st = client.get_waveforms(net, sta, '??', cha, starttime, endtime)
-    # return st
 
 def get_OVPF_arclink_data(net, sta, locid, cha, starttime, endtime):
 
@@ -314,9 +312,12 @@ def get_OVPF_arclink_data(net, sta, locid, cha, starttime, endtime):
     client = Client(host="195.83.188.22", port="18001", user="sysop",
                     password="0vpf1pgP", institution="OVPF")
 
-    st = client.get_waveforms(net, sta, locid, cha, starttime, endtime)
+    try:
+        st = client.get_waveforms(net, sta, locid, cha, starttime, endtime)
+        return st
+    except:
+        return None
 
-    return st
 
 def get_webservice_metadata(net, fname):
     url = 'http://eida.ipgp.fr/fdsnws/station/1/query?'
@@ -344,6 +345,8 @@ def get_data_from_catalog_entry(starttime, window_length, net, sta, cha, inv,
 
     if obs is 'OVPF':
         st = get_OVPF_arclink_data(net, sta, "*", cha, s_time, e_time)
+        if st is None:
+            return None
     else:
         fname = get_webservice_data(net, sta, cha, s_time.isoformat(), e_time.isoformat())
         try:
@@ -360,7 +363,6 @@ def get_data_from_catalog_entry(starttime, window_length, net, sta, cha, inv,
     st.detrend()
     st.attach_response(inv)
     st.remove_response(pre_filt=pre_filt)
-    st = st.slice(starttime, starttime + window_length)
     st = st.slice(starttime, starttime + window_length)
 
     return st

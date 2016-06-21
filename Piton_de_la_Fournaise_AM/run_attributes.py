@@ -13,8 +13,9 @@ do_calc_attributes = True
 # catalog name
 catalog_fname = 'MC3_dump_2012_2016.csv'
 
-#station_names = ["RVL", "FLR", "BOR"]
-station_names = ["BON"]
+station_names = ["RVL", "FLR", "BOR", "BON", "SNE", "FJS", "CSS", "GPS", "GPN", "FOR"]
+max_events_per_file = 10
+#station_names = ["BON"]
 att_dir = "Attributes"
 
 if not os.path.exists(att_dir):
@@ -29,23 +30,25 @@ def get_data_and_attributes(catalog_df, staname, start_i=0, n_max=None, obs='OVP
         ii = i + start_i
         starttime, window_length, event_type, analyst = \
             io.get_catalog_entry(catalog_df, ii)
-        print ii, starttime.isoformat()
+        print staname, ii, starttime.isoformat()
         try:
             st = io.get_data_from_catalog_entry(starttime, window_length, 'PF',
                                                 staname, '???', inv, obs=obs)
+            if st is None:
+                raise IOError
             attributes, att_names = att.get_all_single_station_attributes(st)
             if i  == 0:
-                df = pd.DataFrame(attributes, columns=att_names)
+                df = pd.DataFrame(attributes, columns=att_names, index=[ii])
             else:
-                df_tmp = pd.DataFrame(attributes, columns=att_names)
-                df = df.append(df_tmp, ignore_index=True)
+                df_tmp = pd.DataFrame(attributes, columns=att_names, index=[ii])
+                df = df.append(df_tmp, ignore_index=False)
         except IOError:
-            print 'Problem at %d' % i
+            print 'Problem at %d - Setting all attributes to NaN' % ii
             nan = np.ones((1, len(att_names)))*np.nan
             df_tmp = pd.DataFrame(nan, columns=att_names)
-            df = df.append(df_tmp, ignore_index=True)
+            df = df.append(df_tmp, ignore_index=False)
             continue
-    df_X = catalog_df.join(df)
+    df_X = catalog_df.iloc[start_i : start_i + n_events].join(df)
     return df_X
  
 # first get metadata for all the stations
@@ -58,46 +61,27 @@ inv = read_inventory(response_fname)
 # read catalog
 print("Reading OVPF catalog")
 catalog_df = io.read_MC3_dump_file(catalog_fname)
-som_df = catalog_df.query('EVENT_TYPE == "Sommital"')
-eff_df = catalog_df.query('EVENT_TYPE == "Effondrement"')
-loc_df = catalog_df.query('EVENT_TYPE == "Local"')
-son_df = catalog_df.query('EVENT_TYPE == "Onde sonore"')
-tel_df = catalog_df.query('EVENT_TYPE == "Teleseisme"')
-phT_df = catalog_df.query('EVENT_TYPE == "Phase T"')
 print catalog_df['EVENT_TYPE'].value_counts()
 
-exit()
-
-##  get and plot selected events
-#if do_plot_examples:
-#    sel_events = [
-#        [558, 'example_som.png'],
-#        [833, 'example_eff.png'],
-#        [262, 'example_loc.png'],
-#        [727, 'example_son.png'],
-#        [4065, 'example_tel.png'],
-#        [502, 'example_phT.png'],
-#    ]
-#
-#    # get data and plot
-#    start = time.time()
-#    for ev in sel_events:
-#        starttime, window_length, event_type, analyst = io.get_catalog_entry(catalog_df, ev[0])
-#        # get the data (deconvolved)
-#        st = io.get_data_from_catalog_entry(starttime, window_length, 'PF', 'BON', '???', inv)
-#        print(st.__str__(extended=True))
-#        st.plot(outfile=ev[1])
-#    end = time.time()
-#    print "Time taken to get, deconvolve and plot selected data %.2f" % (end-start)
+n_events = len(catalog_df)
 
 # get data and calculate attributes
-for s in station_names: 
-    df_X_fname = os.path.join(att_dir, 'X_%s_dataframe.dat' % s)
-    start = time.time()
-    df_X = get_data_and_attributes(catalog_df, s, 'OVPF')
-    end = time.time()
-    f_ = open(df_X_fname, 'w')
-    pickle.dump(df_X, f_)
-    f_.close()
-    print "Time taken to get and process %d events at %s : %.2f" % (len(df_X),
-                                                              s, end - start)
+if do_calc_attributes:
+    for s in station_names: 
+        i_start = 0
+        while i_start < n_events:
+            n_max = min(max_events_per_file, n_events - i_start)
+            df_X_fname = os.path.join(att_dir, 'X_%s_%05d_dataframe.dat' % (s, i_start))
+            if not os.path.exists(df_X_fname):
+                start = time.time()
+                df_X = get_data_and_attributes(catalog_df, s, i_start, n_max, 'OVPF')
+                print df_X
+                end = time.time()
+                f_ = open(df_X_fname, 'w')
+                pickle.dump(df_X, f_)
+                f_.close()
+                print "Time taken to get and process %d events starting at %d at %s : %.2f" % \
+                  (n_max, i_start, s, end - start)
+            else:
+                print "%s exists - moving on to next set" % df_X_fname
+            i_start += max_events_per_file

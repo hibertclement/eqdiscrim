@@ -66,7 +66,7 @@ class SimpleTests(unittest.TestCase):
 
         io.get_OVPF_MC3_dump_file(starttime, endtime, fname)
         df = io.read_MC3_dump_file(fname)
-        os.unlink(fname)
+        #os.unlink(fname)
 
         self.assertEqual(len(df), 594)
 

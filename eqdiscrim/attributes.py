@@ -8,16 +8,6 @@ def get_all_single_station_attributes(st):
 
     NaN_value = -12345.0
 
-    # create the amplitude trace and its envelope
-    if len(st) == 3:
-        amp_data = np.sqrt(st[0].data * st[0].data + st[1].data * st[1].data +
-                            st[2].data * st[2].data)
-        amp_trace = st.select(component="Z")[0].copy()
-        amp_trace.data = amp_data
-    else:
-        amp_trace = st.select(component="Z")[0]
-    env = envelope(amp_trace.data)
-
     att_names = list(['AsDec', 'Duration', 'RappMaxMean', 'RappMaxMedian',
                       'RappMaxStd', 'KurtoEnv', 'KurtoSig', 'SkewnessEnv',
                       'SkewnessSig', 'CorPeakNumber', 'int_ratio',
@@ -27,6 +17,21 @@ def get_all_single_station_attributes(st):
                       'FCentroid', 'Fquart1', 'Fquart3', 'NpeakFFT',
                       'MeanPeaksFFT', 'E1FFT', 'E2FFT', 'E3FFT', 'E4FFT',
                       'gamma1', 'gamma2', 'gammas', 'MaxAmp', 'DurOverAmp'])
+    # create the amplitude trace and its envelope
+    if len(st) == 3:
+        att_names.extend(list(['rectilinP', 'azimuthP', 'dipP', 'Plani']))
+        amp_data = np.sqrt(st[0].data * st[0].data + st[1].data * st[1].data +
+                            st[2].data * st[2].data)
+        amp_trace = st.select(component="Z")[0].copy()
+        amp_trace.data = amp_data
+    else:
+        try:
+            amp_trace = st.select(component="Z")[0]
+        except IndexError:
+            att = np.ones((1, len(att_names)), dtype=float) * np.nan
+            return att, att_names
+    env = envelope(amp_trace.data)
+
     if len(st) == 3:
         att_names.extend(list(['rectilinP', 'azimuthP', 'dipP', 'Plani']))
     att = np.empty((1, len(att_names)), dtype=float)
@@ -203,7 +208,10 @@ def get_full_spectrum_stuff(tr):
     npeaks, nb = ipeaks.shape
     sum_peaks = 0.
     for i in xrange(npeaks):
-        sum_peaks += max(FFTsmooth_norm[ipeaks[i,0] : ipeaks[i, 1]])
+        i1 = ipeaks[i, 0]
+        i2 = ipeaks[i, 1]
+        if i2 > i1:
+            sum_peaks += max(FFTsmooth_norm[i1 : i2])
     MeanPeaksFFT = sum_peaks / float(npeaks)
 
     npts = len(FFTsmooth_norm)
