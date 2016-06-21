@@ -90,7 +90,38 @@ for sta in station_names:
     std = np.std([tree.feature_importances_ for tree in clf.estimators_], axis=0)
     indices = np.argsort(importances)[::-1]
 
-    print("Feature ranking:")
-    for f in xrange(len(att_list)):
-        print("Feature %d : %s (%.2f percent)" % (indices[f], att_list[indices[f]], importances[indices[f]]*100))
+    # print("Feature ranking:")
+    # for f in xrange(len(att_list)):
+    #    print("Feature %d : %s (%.2f percent)" % (indices[f], att_list[indices[f]], importances[indices[f]]*100))
     
+    # now do it again but with only best attributes
+    print "Using 10 best features"
+    best_atts = [att_list[indices[i]] for i in xrange(10)]
+    X_train = train_df[best_atts].values
+    X_test = test_df[best_atts].values
+
+    clf = RandomForestClassifier(n_estimators = 10)
+    clf = clf.fit(X_train, Y_train)
+    # score on training set
+    Y_pred = clf.predict(X_train)
+    scores = cross_val_score(clf, X_train, Y_train, cv=5)
+    cm = confusion_matrix(Y_train, Y_pred)
+    print "Training accuracy: %0.2f (+/- %0.2f)" % (scores.mean(), scores.std() * 2)
+    print cm
+    # score on test set
+    Y_pred = clf.predict(X_test)
+    cm = confusion_matrix(Y_test, Y_pred)
+    print "Testing accuracy: %0.2f" % (accuracy_score(Y_test, Y_pred))
+    print cm
+
+    # print importances
+    importances = clf.feature_importances_
+    std = np.std([tree.feature_importances_ for tree in clf.estimators_], axis=0)
+    indices = np.argsort(importances)[::-1]
+
+    print("Feature ranking:")
+    for f in xrange(len(best_atts)):
+        print("Feature %d : %s (%.2f percent)" % (indices[f], att_list[indices[f]], importances[indices[f]]*100))
+
+
+
