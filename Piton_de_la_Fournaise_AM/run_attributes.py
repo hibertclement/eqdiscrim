@@ -7,15 +7,18 @@ import time
 import os
 from obspy import read_inventory, UTCDateTime
 
+do_read_dump = False
 do_get_metadata = False
 do_calc_attributes = True
 
 # catalog name
-catalog_fname = 'MC3_dump_2012_2016.csv'
+catalog_fname = 'MC3_dump_2009_2016.csv'
+catalog_df_fname = 'df_MC3_dump_2009_2016.dat'
+
+event_types = ["Local", "Profond", "Regional", "Teleseisme", "Onde sonore", "Phase T", "Sommital", "Effondrement"]
 
 station_names = ["RVL", "FLR", "BOR", "BON", "SNE", "FJS", "CSS", "GPS", "GPN", "FOR"]
 max_events_per_file = 10
-#station_names = ["BON"]
 att_dir = "Attributes"
 
 if not os.path.exists(att_dir):
@@ -57,9 +60,24 @@ if do_get_metadata:
 inv = read_inventory(response_fname)
 
 # read catalog
-print("Reading OVPF catalog")
-catalog_df = io.read_MC3_dump_file(catalog_fname)
+if do_read_dump:
+    print("Reading OVPF catalog and writing dataframe")
+    catalog_df = io.read_MC3_dump_file(catalog_fname)
+    f_ = open(catalog_df_fname, 'w')
+    pickle.dump(catalog_df, f_)
+    f_.close()
+else:
+    print("Reading OVPF catalog dataframe")
+    f_ = open(catalog_df_fname, 'r')
+    catalog_df = pickle.load(f_)
+    f_.close()
 print catalog_df['EVENT_TYPE'].value_counts()
+
+# create dictionaries according to types
+event_type_df_dict = {}
+for ev_type in event_types:
+    event_type_df_dict[ev_type] = catalog_df[catalog_df['EVENT_TYPE']==ev_type]
+    print event_type_df_dict[ev_type].head()
 
 n_events = len(catalog_df)
 
@@ -71,15 +89,11 @@ if do_calc_attributes:
             n_max = min(max_events_per_file, n_events - i_start)
             df_X_fname = os.path.join(att_dir, 'X_%s_%05d_dataframe.dat' % (s, i_start))
             if not os.path.exists(df_X_fname):
-                start = time.time()
                 df_X = get_data_and_attributes(catalog_df, s, i_start, n_max, 'OVPF')
-                print df_X
-                end = time.time()
                 f_ = open(df_X_fname, 'w')
                 pickle.dump(df_X, f_)
                 f_.close()
-                print "Time taken to get and process %d events starting at %d at %s : %.2f" % \
-                  (n_max, i_start, s, end - start)
+                print "Wrote %s" % df_X_fname
             else:
                 print "%s exists - moving on to next set" % df_X_fname
             i_start += max_events_per_file
