@@ -28,6 +28,7 @@ event_types = ["Local", "Profond", "Regional", "Teleseisme", "Onde sonore",
 #                  "FOR"]
 station_names = ["RVL", "BOR"]
 max_events_per_file = 100
+max_events_per_type = 300
 att_dir = "Attributes"
 response_fname = 'PF_response.xml'
 
@@ -189,4 +190,5 @@ if do_calc_attributes:
     for ev_type in event_types:
         df = event_type_df_dict[ev_type]
         for staname in station_names: 
-            calc_and_write_attributes(df, ev_type, staname, att_dir)
+            calc_and_write_attributes(df, ev_type, staname, att_dir,
+                                      max_events_per_file, max_events_per_type)
