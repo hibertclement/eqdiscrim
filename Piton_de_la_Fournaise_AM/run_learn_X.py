@@ -7,6 +7,7 @@ import matplotlib.pyplot as plt
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.cross_validation import cross_val_score
 from sklearn.metrics import confusion_matrix, accuracy_score
+import eqdiscrim_io as io
 
 figdir = 'Figures'
 if not os.path.exists(figdir):
@@ -17,61 +18,55 @@ pd.set_option('mode.use_inf_as_null', True)
 station_names = ["RVL", "FLR", "BOR", "BON", "SNE", "FJS", "CSS", "GPS", "GPN", "FOR"]
 att_dir = "Attributes"
 
-num_train = 300
+event_types = ["Effondrement", "Sommital", "Local", "Teleseisme", "Onde sonore"]
+num_train = 500
 
 for sta in station_names:
     # read attributes
+    print "Treating station %s" % sta
     fnames = glob.glob(os.path.join(att_dir, 'X_%s_*_dataframe.dat' % (sta)))
     if len(fnames) == 0:
         continue
-    for fname in fnames:
-        f_ = open(fname, 'r')
-        X_df = pickle.load(f_)
-        f_.close()
-        if fname is fnames[0]:
-            X_df_full = X_df
-        else:
-            X_df_full = X_df_full.append(X_df, ignore_index=False)
+    print "Reading and concatenating %d dataframes" % len(fnames)
+    X_df_full = io.read_and_cat_dataframes(fnames)
 
-    X_df_full_clean = X_df_full.dropna()
-    print sta
-    print X_df_full_clean['EVENT_TYPE'].value_counts()
+    # drop all lines containing nan
+    print "Dropping all rows containing NaN"
+    X_df_full.dropna(inplace=True)
+    print X_df_full['EVENT_TYPE'].value_counts()
 
     # get the list of attributes we are interested in
-    atts = X_df_full_clean.columns[5:]
+    atts = X_df_full.columns[5:]
     att_list = list([att for att in atts])
 
-    # get the indexes of num_train Effondrement events
-    eff_df = X_df_full_clean[X_df_full_clean['EVENT_TYPE'] == 'Effondrement']
-    n = len(eff_df)
-    eff_indexes =  np.random.permutation(eff_df.index.values)[0 : min(num_train, n)]
-
-    # get the indexes of num_train Sommital events
-    som_df = X_df_full_clean[X_df_full_clean['EVENT_TYPE'] == 'Sommital']
-    n = len(som_df)
-    som_indexes =  np.random.permutation(som_df.index.values)[0 : min(num_train, n)]
-
-    # get the indexes of num_train Local events
-    loc_df = X_df_full_clean[X_df_full_clean['EVENT_TYPE'] == 'Local']
-    n = len(loc_df)
-    loc_indexes =  np.random.permutation(loc_df.index.values)[0 : min(num_train, n)]
+    # extract the subsets according to type
+    print "Extracting events according to type"
+    df_list = []
+    df_indexes_list = []
+    for evtype in event_types:
+        df = X_df_full[X_df_full['EVENT_TYPE'] == evtype]
+        n = len(df)
+        df_indexes = np.random.permutation(df.index.values)[0 : min(num_train, n)]
+        df_list.append(df)
+        df_indexes_list.append(df_indexes)
 
     # put them all together
-    all_train_indexes = np.concatenate([eff_indexes, som_indexes, loc_indexes])
-    all_test_indexes = np.concatenate([eff_df.index.values, som_df.index.values, loc_df.index.values])
+    all_train_indexes = np.concatenate(df_indexes_list)
+    all_test_indexes = np.concatenate([df.index.values for df in df_list])
 
     # extract the training set
-    train_df = X_df_full_clean.ix[all_train_indexes]
+    train_df = X_df_full.ix[all_train_indexes]
     print train_df['EVENT_TYPE'].value_counts()
     X_train = train_df[att_list].values
     Y_train = train_df['EVENT_TYPE'].values
 
-    test_df = X_df_full_clean.ix[all_test_indexes]
+    test_df = X_df_full.ix[all_test_indexes]
     X_test = test_df[att_list].values
     Y_test = test_df['EVENT_TYPE'].values
 
     # do a first classification
-    clf = RandomForestClassifier(n_estimators = 10)
+    max_features = int(np.sqrt(len(att_list)))
+    clf = RandomForestClassifier(n_estimators=30, max_features=max_features)
     clf = clf.fit(X_train, Y_train)
     # score on training set
     Y_pred = clf.predict(X_train)

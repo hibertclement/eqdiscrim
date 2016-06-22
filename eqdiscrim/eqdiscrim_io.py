@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 
 import os
+import pickle
 import locale
 import pytz
 import urllib
@@ -377,3 +378,18 @@ def get_catalog_entry(catalog_df, i):
     starttime_obspy = UTCDateTime(starttime)
 
     return starttime_obspy, window_length, event_type, analyst
+
+def read_and_cat_dataframes(fnames):
+
+    for fname in fnames:
+        f_ = open(fname, 'r')
+        X_df = pickle.load(f_)
+        f_.close()
+        if fname is fnames[0]:
+            X_df_full = X_df
+        else:
+            X_df_full = X_df_full.append(X_df, ignore_index=False)
+
+    return X_df_full
+
+
