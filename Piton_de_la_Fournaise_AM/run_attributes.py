@@ -28,10 +28,10 @@ def get_data_and_attributes(catalog_df, staname, start_i=0, n_max=None, obs='OVP
         n_events = n_max
     for i in xrange(n_events):
         ii = i + start_i
-        starttime, window_length, event_type, analyst = \
-            io.get_catalog_entry(catalog_df, ii)
-        print staname, ii, starttime.isoformat()
         try:
+            starttime, window_length, event_type, analyst = \
+            io.get_catalog_entry(catalog_df, ii)
+            print staname, ii, starttime.isoformat()
             st = io.get_data_from_catalog_entry(starttime, window_length, 'PF',
                                                 staname, '???', inv, obs=obs)
             attributes, att_names = att.get_all_single_station_attributes(st)
@@ -40,7 +40,7 @@ def get_data_and_attributes(catalog_df, staname, start_i=0, n_max=None, obs='OVP
             else:
                 df_tmp = pd.DataFrame(attributes, columns=att_names, index=[ii])
                 df = df.append(df_tmp, ignore_index=False)
-        except IOError:
+        except:
             print 'Problem at %d - Setting all attributes to NaN' % ii
             nan = np.ones((1, len(att_names)))*np.nan
             df_tmp = pd.DataFrame(nan, columns=att_names)
