@@ -76,13 +76,19 @@ for sta in station_names:
     for i in xrange(n_best):
         print "Time plot", sta, best_atts[i]
         fig = plt.figure()
-        ax = eff_df[best_atts[i]].plot(color='b', alpha=0.5, label='EFF',
-                    logy=True)
-        som_df[best_atts[i]].plot(color='g', alpha=0.5, label='SOM', logy=True,
-               ax=ax)
-        loc_df[best_atts[i]].plot(color='r', alpha=0.5, label='LOC', logy=True,
-               ax=ax)
-        plt.xlabel('Event number')
+        ts = eff_df['WINDOW_START'].copy()
+        eff_df.loc[:, 'WINDOW_TS'] = pd.to_datetime(ts)
+        ax = eff_df.plot(x='WINDOW_TS', y=best_atts[i], color='b', alpha=0.5, label='EFF',
+                            logy=True)
+        ts = som_df['WINDOW_START'].copy()
+        som_df.loc[:, 'WINDOW_TS'] = pd.to_datetime(ts)
+        som_df.plot(x='WINDOW_TS', y=best_atts[i], color='g', alpha=0.5, label='SOM',
+                            logy=True, ax=ax)
+        ts = loc_df['WINDOW_START'].copy()
+        loc_df.loc[:, 'WINDOW_TS'] = pd.to_datetime(ts)
+        loc_df.plot(x='WINDOW_TS', y=best_atts[i], color='r', alpha=0.5, label='LOC',
+                            logy=True, ax=ax)
+        plt.xlabel('Date')
         plt.ylabel(best_atts[i])
         plt.title("%s : %s vs date" % (sta, best_atts[i]))
         plt.savefig(os.path.join(figdir, "%s_%s_date.png" % (sta, best_atts[i])))
