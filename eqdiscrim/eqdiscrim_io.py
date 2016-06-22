@@ -368,12 +368,12 @@ def get_data_from_catalog_entry(starttime, window_length, net, sta, cha, inv,
 
     return st
 
-def get_catalog_entry(catalog_df, i):
-    ev = catalog_df[i:i+1]
-    starttime = ev['WINDOW_START'].values[0]
-    window_length = ev['WINDOW_LENGTH'].values[0]
-    event_type = ev['EVENT_TYPE'].values[0]
-    analyst = ev['ANALYST'].values[0]
+def get_catalog_entry(catalog_df, index):
+    ev = catalog_df.ix[index]
+    starttime = ev['WINDOW_START']
+    window_length = ev['WINDOW_LENGTH']
+    event_type = ev['EVENT_TYPE']
+    analyst = ev['ANALYST']
 
     starttime_obspy = UTCDateTime(starttime)
 
