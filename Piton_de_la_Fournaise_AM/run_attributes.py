@@ -28,7 +28,7 @@ catalog_df_fname = 'df_MC3_dump_2009_2016.dat'
 catalog_df_samp_fname = 'df_MC3_dump_2009_2016_sampled.dat'
 event_types = ["Local", "Profond", "Regional", "Teleseisme", "Onde sonore",
                "Phase T", "Sommital", "Effondrement", "Indetermine"]
-station_names = ["RVL", "BOR"]
+station_names = ["RVL"]
 max_events_per_file = 100
 max_events_per_type = 500
 att_dir = "Attributes"
