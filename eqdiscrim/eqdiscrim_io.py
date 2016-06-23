@@ -331,7 +331,7 @@ def get_webservice_metadata(net, fname):
     urllib.urlretrieve(url, fname)
 
 def get_data_from_catalog_entry(starttime, window_length, net, sta, cha, inv,
-                                obs='OVPF'):
+                                obs='OVPF', simulate=False):
 
     # calculate the window length needed to do proper tapering / filtering
     # before deconvolution (add 20% to the length, 10% before and after)
@@ -363,8 +363,13 @@ def get_data_from_catalog_entry(starttime, window_length, net, sta, cha, inv,
         os.unlink(fname)
 
     st.detrend()
-    st.attach_response(inv)
-    st.remove_response(pre_filt=pre_filt)
+    if simulate:
+        # inv actually contains a parser object that has read a dataless seed file
+        st.simulate(seedresp={'filename': inv, 'units': "VEL"})
+    else:
+        # inv contains a stationxml inventory complete with responses
+        st.attach_response(inv)
+        st.remove_response(pre_filt=pre_filt)
     st = st.slice(starttime, starttime + window_length)
 
     return st

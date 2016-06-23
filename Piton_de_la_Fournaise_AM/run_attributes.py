@@ -6,6 +6,7 @@ import pickle
 import time
 import os
 from obspy import read_inventory, UTCDateTime, read
+from obspy.io.xseed import Parser
 
 # -----------------------------------
 # SWITCHES
@@ -28,12 +29,13 @@ catalog_df_fname = 'df_MC3_dump_2009_2016.dat'
 catalog_df_samp_fname = 'df_MC3_dump_2009_2016_sampled.dat'
 event_types = ["Local", "Profond", "Regional", "Teleseisme", "Onde sonore",
                "Phase T", "Sommital", "Effondrement", "Indetermine"]
-station_names = ["RVL"]
+station_names = ["RVL", "BOR"]
 max_events_per_file = 100
 max_events_per_type = 500
 att_dir = "Attributes"
 data_dir = "Data"
 response_fname = 'PF_response.xml'
+BOR_response_fname = 'OVPF-CP.BOR.dataless.txt'
 
 # -----------------------------------
 # FUNCTIONS
@@ -72,18 +74,27 @@ def get_data_and_attributes(catalog_df, staname, indexes, obs='OVPF'):
             # get the data and attributes
             if do_fake_attributes:
                 attributes, att_names = get_fake_attributes(starttime)
+
             elif do_use_saved_data:
                 st_fname = os.path.join(data_dir, "%d_PF.%s.*MSEED" % (index, staname))
                 st = read(st_fname)
+
             else:
-                st = io.get_data_from_catalog_entry(starttime, window_length,
+                if staname is 'BOR':
+                        parser = Parser(BOR_response_fname)
+                        st = io.get_data_from_catalog_entry(starttime, window_length,
+                                                    'PF', staname, '??Z', parser,
+                                                     obs=obs, simulate=True)
+                else:
+                    st = io.get_data_from_catalog_entry(starttime, window_length,
                                                     'PF', staname, '??Z', inv,
-                                                    obs=obs)
+                                                     obs=obs)
                 if do_save_data and st is not None:
                     for tr in st:
                         tr_fname = os.path.join(data_dir, "%d_%s.MSEED" % (index, tr.get_id()))
                         tr.write(tr_fname, format='MSEED')
-                        print "Wrote %s" % tr_fname
+
+                # actually get the attributes
                 attributes, att_names =\
                     att.get_all_single_station_attributes(st)
 
