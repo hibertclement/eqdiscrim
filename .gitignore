@@ -77,3 +77,5 @@ synthetic_data/
 static_catalogs/sihex_tidy_Kevin.xlsx
 *.xml
 *.txt
+Data/
+nohup.out
