@@ -5,7 +5,7 @@ import numpy as np
 import pickle
 import time
 import os
-from obspy import read_inventory, UTCDateTime
+from obspy import read_inventory, UTCDateTime, read
 
 # -----------------------------------
 # SWITCHES
@@ -73,7 +73,8 @@ def get_data_and_attributes(catalog_df, staname, indexes, obs='OVPF'):
             if do_fake_attributes:
                 attributes, att_names = get_fake_attributes(starttime)
             elif do_use_saved_data:
-                raise NotImplementedError, "Using saved data is not implemented"
+                st_fname = os.path.join(data_dir, "%d_PF.%s.*MSEED" % (index, staname))
+                st = read(st_fname)
             else:
                 st = io.get_data_from_catalog_entry(starttime, window_length,
                                                     'PF', staname, '??Z', inv,
