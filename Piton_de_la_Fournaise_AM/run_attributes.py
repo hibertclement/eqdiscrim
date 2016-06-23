@@ -12,9 +12,12 @@ from obspy import read_inventory, UTCDateTime
 # -----------------------------------
 
 do_read_dump = False
+do_sample_database = False
 do_get_metadata = False
 do_calc_attributes = True
-do_fake_attributes = True
+do_fake_attributes = False
+do_save_data = True
+do_use_saved_data = True
 
 # -----------------------------------
 # LOGISTICS
@@ -22,14 +25,16 @@ do_fake_attributes = True
 
 catalog_fname = 'MC3_dump_2009_2016.csv'
 catalog_df_fname = 'df_MC3_dump_2009_2016.dat'
+catalog_df_samp_fname = 'df_MC3_dump_2009_2016_sampled.dat'
 event_types = ["Local", "Profond", "Regional", "Teleseisme", "Onde sonore",
                "Phase T", "Sommital", "Effondrement", "Indetermine"]
 # station_names = ["RVL", "FLR", "BOR", "BON", "SNE", "FJS", "CSS", "GPS", "GPN",
 #                  "FOR"]
 station_names = ["RVL", "BOR"]
 max_events_per_file = 100
-max_events_per_type = 300
+max_events_per_type = 500
 att_dir = "Attributes"
+data_dir = "Data"
 response_fname = 'PF_response.xml'
 
 # -----------------------------------
@@ -69,10 +74,14 @@ def get_data_and_attributes(catalog_df, staname, indexes, obs='OVPF'):
             # get the data and attributes
             if do_fake_attributes:
                 attributes, att_names = get_fake_attributes(starttime)
+            elif do_use_saved_data:
+                raise NotImplementedError, "Using saved data is not implemented"
             else:
                 st = io.get_data_from_catalog_entry(starttime, window_length,
                                                     'PF', staname, '???', inv,
                                                     obs=obs)
+                if do_save_data:
+                    raise NotImplementedError, "Saving data is not implemented"
                 attributes, att_names =\
                     att.get_all_single_station_attributes(st)
 
@@ -101,20 +110,13 @@ def get_data_and_attributes(catalog_df, staname, indexes, obs='OVPF'):
     df_X = catalog_df.ix[indexes].join(df_att)
     return df_X
  
-def calc_and_write_attributes(df, ev_type, staname, att_dir,
-                              max_events_per_file=100, max_n=1000):
+def calc_and_write_attributes(df_samp, ev_type, staname, att_dir,
+                              max_events_per_file=None):
     """
     Outer function to calculate and write the attributes
     """
 
-    # if there are more than max_n events in the catalog, then sample them
-    # randomly
-    n_events = len(df)
-    if n_events > max_n:
-        n_events = max_n
-        df_samp = df.sample(n=max_n)
-    else:
-        df_samp = df.copy()
+    n_events = len(df_samp)
 
     # save the indexes of the sampled catalog - they are needed later
     indexes = df_samp.index
@@ -126,7 +128,10 @@ def calc_and_write_attributes(df, ev_type, staname, att_dir,
     while i_start < n_events:
 
         # get the number of events in this batch
-        n_max = min(max_events_per_file, n_events - i_start)
+        if max_events_per_file is not None:
+            n_max = min(max_events_per_file, n_events - i_start)
+        else:
+            n_max = n_events
 
         # construct the filename for this batch
         df_X_fname = os.path.join(att_dir, 'X_%s_%s_%05d_dataframe.dat' %
@@ -136,7 +141,7 @@ def calc_and_write_attributes(df, ev_type, staname, att_dir,
         if not os.path.exists(df_X_fname):
 
             # get the data and attributes for this batch
-            df_X = get_data_and_attributes(df, staname,
+            df_X = get_data_and_attributes(df_samp, staname,
                                            indexes[i_start : i_start + n_max],
                                            'OVPF')
             # save resulting data-frame to file
@@ -149,7 +154,7 @@ def calc_and_write_attributes(df, ev_type, staname, att_dir,
             print "%s exists - moving on to next set" % df_X_fname
 
         # go onto next batch
-        i_start += max_events_per_file
+        i_start += n_max
 
 
 # CODE STARTS HERE
@@ -166,23 +171,55 @@ inv = read_inventory(response_fname)
 
 # read catalog
 if do_read_dump:
-    print("Reading OVPF catalog and writing dataframe")
+    # read the dump file
+    print("\nReading OVPF catalog and writing dataframe")
     catalog_df = io.read_MC3_dump_file(catalog_fname)
     f_ = open(catalog_df_fname, 'w')
     pickle.dump(catalog_df, f_)
     f_.close()
 else:
-    print("Reading OVPF catalog dataframe")
+    # read the full dataframe file
+    print("\nReading OVPF catalog dataframe")
     f_ = open(catalog_df_fname, 'r')
     catalog_df = pickle.load(f_)
     f_.close()
+print "Full catalog :"
 print catalog_df['EVENT_TYPE'].value_counts()
 
-# create dictionaries according to types
+# sample the database
+if do_sample_database:
+    # Re-sample the database
+    print("\nResampling the dataframe with maximum number of events per type = %d"
+          % max_events_per_type)
+    event_df_list = []
+    for ev_type in event_types:
+        event_df = catalog_df[catalog_df['EVENT_TYPE']==ev_type]
+        n_events = len(event_df)
+        if n_events > max_events_per_type:
+            n_events = max_events_per_type
+            df_samp = event_df.sample(n=max_events_per_type)
+        else:
+            df_samp = event_df.copy()
+        event_df_list.append(df_samp)
+    # ensure permanence of samples by writing to file
+    sampled_df = pd.concat(event_df_list)
+    f_ = open(catalog_df_samp_fname, 'w')
+    pickle.dump(sampled_df, f_)
+    f_.close()
+else:
+    # read the sampled database
+    print("\nReading the sampled dataframe")
+    f_ = open(catalog_df_samp_fname, 'r')
+    sampled_df = pickle.load(f_)
+    f_.close()
+print "Sampled catalog :"
+print sampled_df['EVENT_TYPE'].value_counts()
+
+
+# create dictionaries of sampled sub-databases according to types
 event_type_df_dict = {}
 for ev_type in event_types:
-    event_type_df_dict[ev_type] = catalog_df[catalog_df['EVENT_TYPE']==ev_type]
-    # print event_type_df_dict[ev_type].head()
+    event_type_df_dict[ev_type] = sampled_df[sampled_df['EVENT_TYPE']==ev_type]
 
 # calculate the attributes
 if do_calc_attributes:
@@ -191,4 +228,4 @@ if do_calc_attributes:
         df = event_type_df_dict[ev_type]
         for staname in station_names: 
             calc_and_write_attributes(df, ev_type, staname, att_dir,
-                                      max_events_per_file, max_events_per_type)
+                                      max_events_per_file)
