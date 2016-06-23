@@ -159,9 +159,11 @@ def calc_and_write_attributes(df_samp, ev_type, staname, att_dir,
 
 # CODE STARTS HERE
 
-# make output directory if it does not exist
+# make output directories if they do not exist
 if not os.path.exists(att_dir):
     os.mkdir(att_dir)
+if do_save_data and not os.path.exists(data_dir):
+    os.mkdir(data_dir)
 
 # get metadata for all the stations
 if do_get_metadata:
