@@ -35,7 +35,7 @@ max_events_per_type = 500
 att_dir = "Attributes"
 data_dir = "Data"
 response_fname = 'PF_response.xml'
-BOR_response_fname = 'OVPF-CP.BOR.dataless.txt'
+BOR_response_fname = 'OVPF-CP.BOR.dataless'
 
 # -----------------------------------
 # FUNCTIONS
