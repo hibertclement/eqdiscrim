@@ -67,4 +67,44 @@ def plot_att_timeseries(df_list, att_list, color_list, figdir, sta):
         plt.title("%s : %s vs date" % (sta, att))
         plt.savefig(os.path.join(figdir, "%s_%s_date.png" % (sta, att)))
 
- 
+def plot_learning_curve(train_sizes, train_scores, valid_scores, title, fname):
+
+    train_scores_mean = np.mean(train_scores, axis=1)
+    train_scores_std = np.std(train_scores, axis=1)
+    test_scores_mean = np.mean(valid_scores, axis=1)
+    test_scores_std = np.std(valid_scores, axis=1)
+
+    fig = plt.figure()
+
+    plt.ylim(0, 1.3)
+    plt.title(title)
+    plt.xlabel("Training examples")
+    plt.ylabel("Score")
+
+    plt.grid()
+    plt.fill_between(train_sizes, train_scores_mean - train_scores_std,
+                     train_scores_mean + train_scores_std, alpha=0.1,
+                     color="r")
+    plt.fill_between(train_sizes, test_scores_mean - test_scores_std,
+                     test_scores_mean + test_scores_std, alpha=0.1, color="g")
+    plt.plot(train_sizes, train_scores_mean, 'o-', color="r",
+             label="Training score")
+    plt.plot(train_sizes, test_scores_mean, 'o-', color="g",
+             label="Cross-validation score")
+
+    plt.legend(loc="best")
+
+    plt.savefig(fname)
+
+def plot_confusion_matrix(cm, labels, title, fname, cmap=plt.cm.Blues):
+    fig = plt.figure()
+    plt.imshow(cm, interpolation='nearest', cmap=cmap)
+    plt.title(title)
+    plt.colorbar()
+    tick_marks = np.arange(len(labels))
+    plt.xticks(tick_marks, labels, rotation=45)
+    plt.yticks(tick_marks, labels)
+    plt.tight_layout()
+    plt.ylabel('True label')
+    plt.xlabel('Predicted label')
+    plt.savefig(fname)
