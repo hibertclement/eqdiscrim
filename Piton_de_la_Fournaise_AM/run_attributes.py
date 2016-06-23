@@ -17,7 +17,7 @@ do_get_metadata = False
 do_calc_attributes = True
 do_fake_attributes = False
 do_save_data = True
-do_use_saved_data = True
+do_use_saved_data = False
 
 # -----------------------------------
 # LOGISTICS
@@ -28,8 +28,6 @@ catalog_df_fname = 'df_MC3_dump_2009_2016.dat'
 catalog_df_samp_fname = 'df_MC3_dump_2009_2016_sampled.dat'
 event_types = ["Local", "Profond", "Regional", "Teleseisme", "Onde sonore",
                "Phase T", "Sommital", "Effondrement", "Indetermine"]
-# station_names = ["RVL", "FLR", "BOR", "BON", "SNE", "FJS", "CSS", "GPS", "GPN",
-#                  "FOR"]
 station_names = ["RVL", "BOR"]
 max_events_per_file = 100
 max_events_per_type = 500
@@ -78,10 +76,13 @@ def get_data_and_attributes(catalog_df, staname, indexes, obs='OVPF'):
                 raise NotImplementedError, "Using saved data is not implemented"
             else:
                 st = io.get_data_from_catalog_entry(starttime, window_length,
-                                                    'PF', staname, '???', inv,
+                                                    'PF', staname, '??Z', inv,
                                                     obs=obs)
-                if do_save_data:
-                    raise NotImplementedError, "Saving data is not implemented"
+                if do_save_data and st is not None:
+                    for tr in st:
+                        tr_fname = os.path.join(data_dir, "%d_%s.MSEED" % (index, tr.get_id()))
+                        tr.write(tr_fname, format='MSEED')
+                        print "Wrote %s" % tr_fname
                 attributes, att_names =\
                     att.get_all_single_station_attributes(st)
 
