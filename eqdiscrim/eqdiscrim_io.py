@@ -311,9 +311,10 @@ def get_OVPF_arclink_data(net, sta, locid, cha, starttime, endtime):
     # serveur de données OVPF
     # pitonmanuel 195.83.188.22
     client = Client(host="195.83.188.22", port="18001", user="sysop",
-                    password="0vpf1pgP", institution="OVPF")
+                    institution="OVPF")
 
     try:
+        #print client.get_inventory(net, sta, locid, cha, starttime, endtime).keys()
         st = client.get_waveforms(net, sta, locid, cha, starttime, endtime)
         return st
     except:
