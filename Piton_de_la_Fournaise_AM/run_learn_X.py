@@ -31,7 +31,7 @@ def OVPF_score_func(y, y_pred):
 OVPF_scorer = make_scorer(OVPF_score_func)
 # ----------------
 
-do_learning_curve = True
+do_learning_curve = False
 
 figdir = 'Figures'
 if not os.path.exists(figdir):
@@ -41,40 +41,26 @@ pd.set_option('mode.use_inf_as_null', True)
 
 station_names = ["RVL", "BOR"]
 max_events = 500
-# station_names = ["RVL"]
+n_best_atts = 10
 att_dir = "Attributes"
+best_atts_fname = 'best_attributes.dat'
 
-#event_types = ["Effondrement", "Sommital", "Local", "Teleseisme", "Onde sonore", "Regional", "Profond"]
-#event_types = ["Sommital", "Local", "Teleseisme", "Regional", "Profond", "Effondrement", "Onde sonore", "Phase T", "Indetermine"]
 event_types = ["Sommital", "Local", "Teleseisme", "Regional", "Profond",
                "Effondrement", "Onde sonore", "Phase T"]
-small_classes = ['Regional', 'Phase T', 'Onde sonore', 'Teleseisme', 'Local']
-#large_classes = ['Effondrement', 'Sommital', 'Profond', 'Indetermine']
-large_classes = ['Effondrement', 'Sommital', 'Profond']
 
 def balance_classes(df_full, classes):
-#    # only learn the classes in the header
-#    print "\nExtracting small classes"
-#    df_list = []
-#    for ev_type in small_classes:
-#        df_list.append(df_full[df_full['EVENT_TYPE'] == ev_type])
-#    X_df_small = pd.concat(df_list)
-#    print X_df_small['EVENT_TYPE'].value_counts()
 
     print "\nExtracting and resampling classes"
     df_list = []
     for ev_type in classes:
-        df_list.append(df_full[df_full['EVENT_TYPE'] == ev_type].sample(n=max_events, replace=True))
+        df_list.append(df_full[df_full['EVENT_TYPE'] ==
+                       ev_type].sample(n=max_events, replace=True))
     X_df = pd.concat(df_list)
-    print X_df['EVENT_TYPE'].value_counts()
-
-#    print "\nCombining 1x sampled large and 2x small classes"
-#    X_df = pd.concat([X_df_small, X_df_small, X_df_large])
-#    print X_df['EVENT_TYPE'].value_counts()
 
     return X_df
 
-def run_classification(X_df, sta):
+def run_classification(X_df, sta, output_info=False):
+
     # get the list of attributes we are interested in
     atts = X_df.columns[5:].values
     X = X_df[atts].values
@@ -83,41 +69,66 @@ def run_classification(X_df, sta):
 
     # use a random forest
     max_features = int(np.sqrt(len(atts)))
-    clf = RandomForestClassifier(n_estimators=30, max_features=max_features)
+    clf = RandomForestClassifier(n_estimators=100, max_features=max_features)
     
-    # print "Learning with a random forest"
-    if do_learning_curve:
+    if output_info and do_learning_curve:
+        print "Learning with a random forest"
         train_sizes, train_scores, valid_scores = learning_curve(clf, X, y,
-            train_sizes=[500, 1000, 1500,  2000, 2500, 2700, 2800, 2900, 3000, 3100, 3200], cv=5, scoring=OVPF_scorer)
+            train_sizes=[500, 1000, 1500,  2000, 2250, 2500, 2700, 2800, 2900,
+                         3000, 3100, 3200], cv=5, scoring=OVPF_scorer)
         gr.plot_learning_curve(train_sizes, train_scores, valid_scores,
-                               'Random Forest at %s' % sta, 'learn_%s.png' % sta)
+                               'Random Forest at %s' % sta,
+                               os.path.join(figdir, 'learn_%s.png' % sta))
 
-    print "Producing confusion matrix"
     # Uses proportionnal splitting
     X_train, X_test, y_train, y_test = train_test_split(X, y, random_state=0)
     clf_fitted = clf.fit(X_train, y_train)
     y_pred = clf_fitted.predict(X_test)
-   
-    print('Classification report')
-    cr = classification_report(y_test, y_pred, target_names=labels)
-    print cr
 
-    print('Cross validation scores using OVPF metric')
-    cv_scores = cross_val_score(clf, X, y, scoring=OVPF_scorer, cv=5)
-    score_mean = np.mean(cv_scores)
-    score_2std = 2 * np.std(cv_scores)
-    print("%.2f (+/-) %.2f" % (score_mean, score_2std))
+  
+    if output_info:
+        print('Classification report')
+        cr = classification_report(y_test, y_pred, target_names=labels)
+        print cr
 
-    print('Confusion matrix')
-    cm = confusion_matrix(y_test, y_pred)
-    cm_norm = cm.astype('float') / cm.sum(axis=1)[:, np.newaxis]
-    print cm
-    # gr.plot_confusion_matrix(cm, labels, 'Random Forest at %s' % sta, 'cm_%s.png' % sta)
-    gr.plot_confusion_matrix(cm_norm, labels, 'Random Forest at %s : %.2f (+/-) %.2f'
-                             % (sta, score_mean, score_2std), 'cm_norm_%s.png' % sta)
+    if output_info:
+        print('Cross validation scores using OVPF metric')
+        cv_scores = cross_val_score(clf, X, y, scoring=OVPF_scorer, cv=5)
+        score_mean = np.mean(cv_scores)
+        score_2std = 2 * np.std(cv_scores)
+        print("%.2f (+/-) %.2f" % (score_mean, score_2std))
+
+    if output_info:
+        print('Confusion matrix')
+        cm = confusion_matrix(y_test, y_pred)
+        cm_norm = cm.astype('float') / cm.sum(axis=1)[:, np.newaxis]
+        print cm
+        gr.plot_confusion_matrix(cm_norm, labels, '%s : %.2f (+/-) %.2f'
+                             % (sta, score_mean * 100, score_2std * 100),
+                                os.path.join(figdir, 'cm_norm_%s.png' % sta))
  
+    return clf_fitted, atts
+
+def get_important_features(clf, atts, n_max=None):
+    # get importances
+    print "Most important features"
+    importances = clf.feature_importances_
+    std = np.std([tree.feature_importances_ for tree in clf.estimators_],
+             axis=0)
+    indices = np.argsort(importances)[::-1]
+    # indices = np.argsort(importances)
+    if n_max is None or n_max > len(indices):
+        return atts[indices[:]]
+    else:
+        return atts[indices[0:n_max]]
+
+# ---------------
+# CODE START HERE
+# ---------------
+
 # list for single stations
-sta_X_df = []
+sta_X_df = {}
+sta_best_atts = {}
 for sta in station_names:
     # read attributes
     print "Treating station %s" % sta
@@ -133,26 +144,43 @@ for sta in station_names:
     print X_df_full['EVENT_TYPE'].value_counts()
 
     # add to single station list
-    sta_X_df.append(X_df_full)
+    sta_X_df[sta]=X_df_full
 
     # extract and combine classes
     X_df = balance_classes(X_df_full, event_types)
 
     # Run classification
-    run_classification(X_df, sta)
+    clf, atts = run_classification(X_df, sta, output_info=False)
+
+    # get important features
+    best_atts = get_important_features(clf, atts, n_best_atts)
+    sta_best_atts[sta] = best_atts
+
+    # re-run classification with best attributes only
+    for a in best_atts:
+        if a not in best_atts:
+            X_df.drop(a, axis=1, inplace=True)
+    clf, atts = run_classification(X_df, sta, output_info=True)
     
+# save best attributes dictionnary for permanence
+f_ = open(best_atts_fname, 'w')
+pickle.dump(sta_best_atts, f_)
+f_.close()
 
 # do multiple station
-for i in xrange(len(station_names)):
-    X_df = sta_X_df[i].copy()
-    sta = station_names[i]
+for sta in station_names:
+    X_df = sta_X_df[sta].copy()
     atts = X_df.columns[5:].values
     new_atts = []
     for a in atts:
-        new_a = '%s_%s' % (sta, a)
-        X_df.rename(columns={a: new_a}, inplace=True)
-        new_atts.append(new_a)
-    if i == 0:
+        # keep attribute if in the best ones for this station
+        if a in sta_best_atts[sta]:
+            new_a = '%s_%s' % (sta, a)
+            X_df.rename(columns={a: new_a}, inplace=True)
+            new_atts.append(new_a)
+        else:
+            X_df.drop(a, axis=1, inplace=True)
+    if sta is station_names[0]:
         X_multi_df = X_df.copy()
     else:
         X_multi_df = X_multi_df.join(X_df[new_atts])
@@ -163,6 +191,6 @@ print X_multi_df['EVENT_TYPE'].value_counts()
 
 print "\nCombined set after class equilibration"
 X_df = balance_classes(X_multi_df, event_types)
-print X_multi_df['EVENT_TYPE'].value_counts()
+print X_df['EVENT_TYPE'].value_counts()
 
-run_classification(X_df, 'BOR+RVL')
+clf, best_atts = run_classification(X_df, 'BOR+RVL', output_info=True)
