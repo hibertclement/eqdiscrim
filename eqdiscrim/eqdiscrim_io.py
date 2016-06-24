@@ -371,6 +371,7 @@ def get_data_from_catalog_entry(starttime, window_length, net, sta, cha, inv,
         st.attach_response(inv)
         st.remove_response(pre_filt=pre_filt)
     st = st.slice(starttime, starttime + window_length)
+    st.detrend()
 
     return st
 
