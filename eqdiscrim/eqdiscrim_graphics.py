@@ -70,9 +70,9 @@ def plot_att_timeseries(df_list, att_list, color_list, figdir, sta):
 def plot_learning_curve(train_sizes, train_scores, valid_scores, title, fname):
 
     train_scores_mean = np.mean(train_scores, axis=1)
-    train_scores_std = np.std(train_scores, axis=1)
+    train_scores_std = 2 * np.std(train_scores, axis=1)
     test_scores_mean = np.mean(valid_scores, axis=1)
-    test_scores_std = np.std(valid_scores, axis=1)
+    test_scores_std = 2 * np.std(valid_scores, axis=1)
 
     fig = plt.figure()
 
