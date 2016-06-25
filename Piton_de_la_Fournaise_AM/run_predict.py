@@ -1,5 +1,7 @@
 import pickle
 import pandas as pd
+import numpy as np
+import matplotlib.pyplot as plt
 
 def clf_dict_to_sta_dataframe(clf_fname, sta_names):
 
@@ -36,14 +38,32 @@ def get_clf_key_from_stalist(clf_df, sta_list):
 
     return df.index.values[0]
     
+def plot_prob(prob, classes, starttime):
+
+    width = 0.75
+    ind = np.arange(len(prob))
+    fig = plt.figure()
+    imax = np.argmax(prob)
+    plt.barh(ind, prob, width, color='b', alpha=0.5)
+    plt.scatter(prob[imax] * 1.05, ind[imax] + width/2,  marker='*', color='black', s=250)
+    plt.xlabel('Probability')
+    plt.yticks(ind + width/2., classes)
+    plt.xlim([0, prob[imax] * 1.2])
+    plt.title("%s - %s - %.2f percent" % (starttime.isoformat(), classes[imax], prob[imax]))
+
+    plt.show()
       
 
 
 
 if __name__ == '__main__':
 
+    from obspy import UTCDateTime
+
     # Parameters that can be modified
     station_names = ["RVL", "BOR"]
+    classes = ['Effondrement', 'Local', 'Regional', 'Sommital', 'Teleseisme', 
+               'Phase T', 'Profond', 'Onde sonore']
 
     # Parameters that should not be modified
     clf_fname = 'clf_functions.dat'
@@ -65,3 +85,8 @@ if __name__ == '__main__':
 
     # y = clf.predict(X)
     # p_matrix = clf.predict_proba(X)
+
+    p_values = np.random.rand(8) 
+    p_values = p_values / np.sum(p_values)
+    starttime = UTCDateTime(2015, 4, 10)
+    plot_prob(p_values, classes, starttime)
