@@ -184,14 +184,12 @@ if __name__ == '__main__':
         best_atts = get_important_features(clf, atts, n_best_atts)
 
         # re-run classification with best attributes only
-        for a in best_atts:
+        for a in atts:
             if a not in best_atts:
                 X_df.drop(a, axis=1, inplace=True)
         clf, atts = run_classification(X_df, sta)
 
-        # get important features again (in case order has changed)
-        best_atts = get_important_features(clf, atts, n_best_atts)
-        sta_best_atts[sta] = best_atts
+        sta_best_atts[sta] = X_df.columns.values[5:]
         sta_clf[sta] = clf
     
     # ------------------------
@@ -215,8 +213,14 @@ if __name__ == '__main__':
         clf, atts = run_classification(X_df, sta)
         best_atts = get_important_features(clf, atts, n_best_atts)
 
+        # re-run classification with best attributes only
+        for a in atts:
+            if a not in best_atts:
+                X_df.drop(a, axis=1, inplace=True)
+        clf, atts = run_classification(X_df, sta)
+
         # save best attributes and classifier
-        sta_best_atts[sta] = best_atts
+        sta_best_atts[sta] = X_df.columns.values[5:]
         sta_clf[sta] = clf
 
     # ------------------------
