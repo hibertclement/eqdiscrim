@@ -44,6 +44,7 @@ max_events = 500
 n_best_atts = 10
 att_dir = "Attributes"
 best_atts_fname = 'best_attributes.dat'
+clf_fname = 'clf_functions.dat'
 
 event_types = ["Sommital", "Local", "Teleseisme", "Regional", "Profond",
                "Effondrement", "Onde sonore", "Phase T"]
@@ -68,8 +69,7 @@ def run_classification(X_df, sta, output_info=False):
     labels = np.unique(y)
 
     # use a random forest
-    max_features = int(np.sqrt(len(atts)))
-    clf = RandomForestClassifier(n_estimators=100, max_features=max_features)
+    clf = RandomForestClassifier(n_estimators=100)
     
     if output_info and do_learning_curve:
         print "Learning with a random forest"
@@ -129,6 +129,7 @@ def get_important_features(clf, atts, n_max=None):
 # list for single stations
 sta_X_df = {}
 sta_best_atts = {}
+sta_clf = {}
 for sta in station_names:
     # read attributes
     print "Treating station %s" % sta
@@ -154,18 +155,28 @@ for sta in station_names:
 
     # get important features
     best_atts = get_important_features(clf, atts, n_best_atts)
-    sta_best_atts[sta] = best_atts
 
     # re-run classification with best attributes only
     for a in best_atts:
         if a not in best_atts:
             X_df.drop(a, axis=1, inplace=True)
     clf, atts = run_classification(X_df, sta, output_info=True)
+
+    # get important features again (in case order has changed)
+    best_atts = get_important_features(clf, atts, n_best_atts)
+    sta_best_atts[sta] = best_atts
+    sta_clf[sta] = clf
     
 # save best attributes dictionnary for permanence
 f_ = open(best_atts_fname, 'w')
 pickle.dump(sta_best_atts, f_)
 f_.close()
+
+# save best attributes dictionnary for permanence
+f_ = open(clf_fname, 'w')
+pickle.dump(sta_clf, f_)
+f_.close()
+
 
 # do multiple station
 for sta in station_names:
@@ -193,4 +204,20 @@ print "\nCombined set after class equilibration"
 X_df = balance_classes(X_multi_df, event_types)
 print X_df['EVENT_TYPE'].value_counts()
 
-clf, best_atts = run_classification(X_df, 'BOR+RVL', output_info=True)
+# run the combined classification
+sta = 'BOR+RVL'
+clf, atts = run_classification(X_df, sta, output_info=True)
+best_atts = get_important_features(clf, atts, n_best_atts)
+sta_best_atts[sta] = best_atts
+sta_clf[sta] = clf
+
+# save best attributes dictionnary for permanence
+f_ = open(best_atts_fname, 'w')
+pickle.dump(sta_best_atts, f_)
+f_.close()
+
+# save best attributes dictionnary for permanence
+f_ = open(clf_fname, 'w')
+pickle.dump(sta_clf, f_)
+f_.close()
+
