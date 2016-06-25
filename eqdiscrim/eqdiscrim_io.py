@@ -8,6 +8,7 @@ import urllib
 import tempfile 
 import pandas as pd
 import numpy as np
+import itertools as it
 import base64
 from obspy import UTCDateTime, read
 from obspy.clients.fdsn import Client
@@ -399,4 +400,13 @@ def read_and_cat_dataframes(fnames):
 
     return X_df_full
 
+def get_station_combinations(station_names):
+    comb_list = []
+    n_sta = len(station_names)
+    for i in xrange(n_sta-1):
+        ii = i + 2
+        for comb in it.combinations(station_names, ii):
+            comb_list.append(comb)
+
+    return comb_list
 
