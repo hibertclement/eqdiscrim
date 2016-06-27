@@ -132,9 +132,8 @@ def calc_and_write_attributes(df_samp, ev_type, staname, att_dir,
                                            indexes[i_start : i_start + n_max],
                                            'OVPF')
             # save resulting data-frame to file
-            f_ = open(df_X_fname, 'w')
-            pickle.dump(df_X, f_)
-            f_.close()
+            with open(df_X_fname, 'w') as f_:
+                pickle.dump(df_X, f_)
             print "Wrote %s" % df_X_fname
         else:
             # file exists - do nothing

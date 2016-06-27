@@ -107,16 +107,19 @@ class Config(object):
         config = ConfigParser.ConfigParser()
         config.read(fname)
 
+        # RunFiles
+        self.runfile_dir = config.get('RunFiles', 'runfile_dir')
+
         # Catalogs
-        self.catalog_fname = config.get('Catalogs', 'catalog_fname')
-        self.catalog_df_fname = config.get('Catalogs', 'catalog_df_fname')
-        self.catalog_df_samp_fname = config.get('Catalogs', 'catalog_df_samp_fname')
+        self.catalog_fname = os.path.join(self.runfile_dir, config.get('Catalogs', 'catalog_fname'))
+        self.catalog_df_fname = os.path.join(self.runfile_dir, config.get('Catalogs', 'catalog_df_fname'))
+        self.catalog_df_samp_fname = os.path.join(self.runfile_dir, config.get('Catalogs', 'catalog_df_samp_fname'))
         self.do_read_dump = config.getboolean('Catalogs', 'do_read_dump')
         self.do_sample_database = config.getboolean('Catalogs', 'do_sample_database')
 
         # Metadata
-        self.response_fname = config.get('Metadata', 'response_fname')
-        self.BOR_response_fname = config.get('Metadata', 'BOR_response_fname')
+        self.response_fname = os.path.join(self.runfile_dir, config.get('Metadata', 'response_fname'))
+        self.BOR_response_fname = os.path.join(self.runfile_dir, config.get('Metadata', 'BOR_response_fname'))
         self.do_get_metadata = config.getboolean('Metadata', 'do_get_metadata')
 
         # Attributes
@@ -143,8 +146,8 @@ class Config(object):
         self.do_learning_curve = config.getboolean('Learning', 'do_learning_curve')
         self.max_events = config.getint('Learning', 'max_events')
         self.n_best_atts = config.getint('Learning', 'n_best_atts')
-        self.best_atts_fname = config.get('Learning', 'best_atts_fname')
-        self.clf_fname = config.get('Learning', 'clf_fname')
+        self.best_atts_fname = os.path.join(self.runfile_dir, config.get('Learning', 'best_atts_fname'))
+        self.clf_fname = os.path.join(self.runfile_dir, config.get('Learning', 'clf_fname'))
 
     def parse_list_(self, list_as_string):
         words = list_as_string.split(',')
