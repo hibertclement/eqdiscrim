@@ -3,11 +3,9 @@ import attributes as att
 import pandas as pd
 import numpy as np
 import pickle
-import time
 import argparse
 import os
-import ConfigParser
-from obspy import read_inventory, UTCDateTime, read
+from obspy import read_inventory, read
 from obspy.io.xseed import Parser
 
 
@@ -15,7 +13,8 @@ from obspy.io.xseed import Parser
 # FUNCTIONS
 # -----------------------------------
 
-def get_data_and_attributes(catalog_df, staname, indexes, obs='OVPF'):
+def get_data_and_attributes(cfg, inv, catalog_df, staname, indexes,
+                            obs='OVPF'):
     """
     Given a catalog data-frame, runs the requests for the data and
     calculates the attributes.
@@ -37,7 +36,8 @@ def get_data_and_attributes(catalog_df, staname, indexes, obs='OVPF'):
             # get the data and attributes
 
             if cfg.do_use_saved_data:
-                st_fname = os.path.join(cfg.data_dir, "%d_PF.%s.*MSEED" % (index, staname))
+                st_fname = os.path.join(
+                    cfg.data_dir, "%d_PF.%s.*MSEED" % (index, staname))
                 try:
                     st = read(st_fname)
                 except:
@@ -45,35 +45,41 @@ def get_data_and_attributes(catalog_df, staname, indexes, obs='OVPF'):
 
             else:
                 if staname == 'BOR':
-                        parser = Parser(cfg.BOR_response_fname)
-                        st = io.get_data_from_catalog_entry(starttime, window_length,
-                                                    'PF', staname, '??Z', parser,
-                                                     obs=obs, simulate=True)
+                    parser = Parser(cfg.BOR_response_fname)
+                    st = io.get_data_from_catalog_entry(starttime,
+                                                        window_length,
+                                                        'PF', staname,
+                                                        '??Z', parser,
+                                                        obs=obs,
+                                                        simulate=True)
                 else:
-                    st = io.get_data_from_catalog_entry(starttime, window_length,
-                                                    'PF', staname, '??Z', inv,
-                                                     obs=obs)
+                    st = io.get_data_from_catalog_entry(starttime,
+                                                        window_length,
+                                                        'PF', staname, '??Z',
+                                                        inv, obs=obs)
                 if cfg.do_save_data and st is not None:
                     for tr in st:
-                        tr_fname = os.path.join(cfg.data_dir, "%d_%s.MSEED" % (index, tr.get_id()))
+                        tr_fname = os.path.join(cfg.data_dir,
+                                                "%d_%s.MSEED" % (index,
+                                                                 tr.get_id()))
                         tr.write(tr_fname, format='MSEED')
 
             # actually get the attributes
             try:
                 st.detrend()
             except AttributeError:
-               raise ValueError
+                raise ValueError
             attributes, att_names =\
                 att.get_all_single_station_attributes(st)
 
             # create the data-frame with the attributes (using the same indexes
             # as those in the catalog)
-            if i  == 0:
+            if i == 0:
                 df_att = pd.DataFrame(attributes, columns=att_names,
                                       index=[index])
             else:
                 df_att_tmp = pd.DataFrame(attributes, columns=att_names,
-                                      index=[index])
+                                          index=[index])
                 df_att = df_att.append(df_att_tmp, ignore_index=False)
 
         except ValueError:
@@ -96,8 +102,9 @@ def get_data_and_attributes(catalog_df, staname, indexes, obs='OVPF'):
     # we are working with and return it
     df_X = catalog_df.ix[indexes].join(df_att)
     return df_X
- 
-def calc_and_write_attributes(df_samp, ev_type, staname, att_dir,
+
+
+def calc_and_write_attributes(cfg, inv, df_samp, ev_type, staname, att_dir,
                               max_events_per_file=None):
     """
     Outer function to calculate and write the attributes
@@ -128,8 +135,8 @@ def calc_and_write_attributes(df_samp, ev_type, staname, att_dir,
         if not os.path.exists(df_X_fname):
 
             # get the data and attributes for this batch
-            df_X = get_data_and_attributes(df_samp, staname,
-                                           indexes[i_start : i_start + n_max],
+            df_X = get_data_and_attributes(cfg, inv, df_samp, staname,
+                                           indexes[i_start:i_start + n_max],
                                            'OVPF')
             # save resulting data-frame to file
             with open(df_X_fname, 'w') as f_:
@@ -142,6 +149,7 @@ def calc_and_write_attributes(df_samp, ev_type, staname, att_dir,
         # go onto next batch
         i_start += n_max
 
+
 def run_attributes(args):
 
     cfg = io.Config(args.config_file)
@@ -151,7 +159,6 @@ def run_attributes(args):
         os.mkdir(cfg.att_dir)
     if cfg.do_save_data and not os.path.exists(cfg.data_dir):
         os.mkdir(cfg.data_dir)
-
 
     # get metadata for all the stations
     if cfg.do_get_metadata:
@@ -177,11 +184,11 @@ def run_attributes(args):
     # sample the database
     if cfg.do_sample_database:
         # Re-sample the database
-        print("\nResampling the dataframe with maximum number of events per type = %d"
-          % cfg.max_events_per_type)
+        print("\nResampling with maximum number of events per type = %d"
+              % cfg.max_events_per_type)
         event_df_list = []
         for ev_type in cfg.event_types:
-            event_df = catalog_df[catalog_df['EVENT_TYPE']==ev_type]
+            event_df = catalog_df[catalog_df['EVENT_TYPE'] == ev_type]
             n_events = len(event_df)
             if n_events > cfg.max_events_per_type:
                 n_events = cfg.max_events_per_type
@@ -210,22 +217,24 @@ def run_attributes(args):
     # create dictionaries of sampled sub-databases according to types
     event_type_df_dict = {}
     for ev_type in cfg.event_types:
-        event_type_df_dict[ev_type] = sampled_df[sampled_df['EVENT_TYPE']==ev_type]
+        event_type_df_dict[ev_type] = sampled_df[sampled_df['EVENT_TYPE'] ==
+                                                 ev_type]
 
     # calculate the attributes
     if cfg.do_calc_attributes:
         # loop over event types
         for ev_type in cfg.event_types:
             df = event_type_df_dict[ev_type]
-            for staname in cfg.station_names: 
-                calc_and_write_attributes(df, ev_type, staname, cfg.att_dir,
-                                          cfg.max_events_per_file)
+            for staname in cfg.station_names:
+                calc_and_write_attributes(cfg, inv, df, ev_type, staname,
+                                          cfg.att_dir, cfg.max_events_per_file)
+
 
 if __name__ == '__main__':
 
     # set up parser
-    parser = argparse.ArgumentParser(description=
-        'Launch attribute calculation for classifier training')
+    parser = argparse.ArgumentParser(
+        description='Launch attribute calculation for classifier training')
     parser.add_argument('config_file', help='eqdiscrim configuration file')
 
     # parse input

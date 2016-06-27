@@ -5,11 +5,10 @@ import string
 import argparse
 import numpy as np
 import pandas as pd
-import matplotlib.pyplot as plt
 from sklearn.ensemble import RandomForestClassifier
-from sklearn import svm
 from sklearn.cross_validation import cross_val_score, train_test_split
-from sklearn.metrics import confusion_matrix, accuracy_score, classification_report, precision_score, recall_score, make_scorer
+from sklearn.metrics import confusion_matrix, classification_report
+from sklearn.metrics import precision_score, recall_score, make_scorer
 from sklearn.learning_curve import learning_curve
 import eqdiscrim_io as io
 import eqdiscrim_graphics as gr
@@ -23,11 +22,11 @@ def OVPF_score_func(y, y_pred):
     # scoring function tuned for OVPF requirements
     non_seismic_precision = precision_score(y, y_pred,
                                             labels=['Effondrement',
-#                                                    'Indetermine',
                                                     'Onde sonore',
                                                     'Phase T'],
                                             average='weighted')
-    seismic_recall = recall_score(y, y_pred, labels=['Sommital', 'Local',
+    seismic_recall = recall_score(y, y_pred, labels=['Sommital',
+                                                     'Local',
                                                      'Regional',
                                                      'Teleseisme',
                                                      'Profond'],
@@ -35,7 +34,8 @@ def OVPF_score_func(y, y_pred):
     return np.mean((non_seismic_precision, seismic_recall))
 OVPF_scorer = make_scorer(OVPF_score_func)
 
-def balance_classes(df_full, classes, cfg):
+
+def balance_classes(cfg, df_full, classes):
 
     df_list = []
     for ev_type in classes:
@@ -45,7 +45,8 @@ def balance_classes(df_full, classes, cfg):
 
     return X_df
 
-def run_classification(X_df, sta, output_info=False):
+
+def run_classification(cfg, X_df, sta, output_info=False):
 
     # get the list of attributes we are interested in
     atts = X_df.columns[5:].values
@@ -55,12 +56,14 @@ def run_classification(X_df, sta, output_info=False):
 
     # use a random forest
     clf = RandomForestClassifier(n_estimators=100)
-    
+
     if output_info and cfg.do_learning_curve:
         print "\nProducing learning curve"
-        train_sizes, train_scores, valid_scores = learning_curve(clf, X, y,
-            train_sizes=[500, 1000, 1500,  2000, 2250, 2500, 2700, 2800, 2900,
-                         3000, 3100, 3200], cv=5, scoring=OVPF_scorer)
+        train_sizes, train_scores, valid_scores =\
+            learning_curve(clf, X, y,
+                           train_sizes=[500, 1000, 1500,  2000, 2250, 2500,
+                                        2700, 2800, 2900, 3000, 3100, 3200],
+                           cv=5, scoring=OVPF_scorer)
         gr.plot_learning_curve(train_sizes, train_scores, valid_scores,
                                'Random Forest at %s' % sta,
                                os.path.join(cfg.figdir, 'learn_%s.png' % sta))
@@ -70,7 +73,6 @@ def run_classification(X_df, sta, output_info=False):
     clf_fitted = clf.fit(X_train, y_train)
     y_pred = clf_fitted.predict(X_test)
 
-  
     if output_info:
         print('\nClassification report')
         cr = classification_report(y_test, y_pred, target_names=labels)
@@ -89,22 +91,22 @@ def run_classification(X_df, sta, output_info=False):
         cm_norm = cm.astype('float') / cm.sum(axis=1)[:, np.newaxis]
         print cm
         gr.plot_confusion_matrix(cm_norm, labels, '%s : %.2f (+/-) %.2f'
-                             % (sta, score_mean * 100, score_2std * 100),
-                                os.path.join(cfg.figdir, 'cm_norm_%s.png' % sta))
- 
+                                 % (sta, score_mean * 100, score_2std * 100),
+                                 os.path.join(cfg.figdir,
+                                              'cm_norm_%s.png' % sta))
+
     return clf_fitted, atts
+
 
 def get_important_features(clf, atts, n_max=None):
     # get importances
     importances = clf.feature_importances_
-    std = np.std([tree.feature_importances_ for tree in clf.estimators_],
-             axis=0)
     indices = np.argsort(importances)[::-1]
-    # indices = np.argsort(importances)
     if n_max is None or n_max > len(indices):
         return atts[indices[:]]
     else:
         return atts[indices[0:n_max]]
+
 
 def combine_best_features(sta_comb, sta_X_df, sta_best_atts, station_names):
 
@@ -124,8 +126,9 @@ def combine_best_features(sta_comb, sta_X_df, sta_best_atts, station_names):
             X_multi_df = X_df.copy()
         else:
             X_multi_df = X_multi_df.join(X_df[new_atts])
- 
+
     return X_multi_df
+
 
 def run_learn(args):
 
@@ -143,7 +146,8 @@ def run_learn(args):
     for sta in cfg.station_names:
         # read attributes
         print "\nTreating station %s... \n" % sta
-        fnames = glob.glob(os.path.join(cfg.att_dir, 'X_*_%s_*_dataframe.dat' % (sta)))
+        fnames = glob.glob(os.path.join(cfg.att_dir,
+                                        'X_*_%s_*_dataframe.dat' % (sta)))
         if len(fnames) == 0:
             continue
         X_df_full = io.read_and_cat_dataframes(fnames)
@@ -153,13 +157,13 @@ def run_learn(args):
         print X_df_full['EVENT_TYPE'].value_counts()
 
         # add to single station list
-        sta_X_df[sta]=X_df_full
+        sta_X_df[sta] = X_df_full
 
         # extract and combine classes
-        X_df = balance_classes(X_df_full, cfg.event_types, cfg)
+        X_df = balance_classes(cfg, X_df_full, cfg.event_types)
 
         # Run classification
-        clf, atts = run_classification(X_df, sta)
+        clf, atts = run_classification(cfg, X_df, sta)
 
         # get important features
         best_atts = get_important_features(clf, atts, cfg.n_best_atts)
@@ -168,11 +172,11 @@ def run_learn(args):
         for a in atts:
             if a not in best_atts:
                 X_df.drop(a, axis=1, inplace=True)
-        clf, atts = run_classification(X_df, sta)
+        clf, atts = run_classification(cfg, X_df, sta)
 
         sta_best_atts[sta] = X_df.columns.values[5:]
         sta_clf[sta] = clf
-    
+
     # ------------------------
     # station combinations
     # ------------------------
@@ -189,17 +193,17 @@ def run_learn(args):
         X_multi_df.dropna(inplace=True)
         print X_df_full['EVENT_TYPE'].value_counts()
 
-        X_df = balance_classes(X_multi_df, cfg.event_types, cfg)
+        X_df = balance_classes(cfg, X_multi_df, cfg.event_types)
 
         # run the combined classification
-        clf, atts = run_classification(X_df, sta)
+        clf, atts = run_classification(cfg, X_df, sta)
         best_atts = get_important_features(clf, atts, cfg.n_best_atts)
 
         # re-run classification with best attributes only
         for a in atts:
             if a not in best_atts:
                 X_df.drop(a, axis=1, inplace=True)
-        clf, atts = run_classification(X_df, sta)
+        clf, atts = run_classification(cfg, X_df, sta)
 
         # save best attributes and classifier
         sta_best_atts[sta] = X_df.columns.values[5:]
@@ -216,11 +220,13 @@ def run_learn(args):
     with open(cfg.clf_fname, 'w') as f_:
         pickle.dump(sta_clf, f_)
 
+
 if __name__ == '__main__':
 
     # set up parser
-    parser = argparse.ArgumentParser(description=
-        'Launch attribute calculation for classifier training')
+    parser = \
+        argparse.ArgumentParser(
+            description='Launch attribute calculation for classifier training')
     parser.add_argument('config_file', help='eqdiscrim configuration file')
 
     # parse input

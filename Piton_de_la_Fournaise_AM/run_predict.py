@@ -10,6 +10,7 @@ import eqdiscrim_io as io
 
 pd.set_option('mode.use_inf_as_null', True)
 
+
 def clf_dict_to_sta_dataframe(clf_fname, sta_names):
 
     f_ = open(clf_fname, 'r')
@@ -24,12 +25,13 @@ def clf_dict_to_sta_dataframe(clf_fname, sta_names):
     clf_df = pd.DataFrame(series)
 
     return clf_dict, clf_df
-        
+
+
 def get_clf_key_from_stalist(clf_df, sta_list):
 
     all_stations = clf_df.columns.values
 
-    # get all clfs that contain all the stations 
+    # get all clfs that contain all the stations
     for i in xrange(len(all_stations)):
         sta = all_stations[i]
         if sta in sta_list:
@@ -44,39 +46,42 @@ def get_clf_key_from_stalist(clf_df, sta_list):
                 df = df[df[sta] == False]
 
     return df.index.values[0]
-    
+
+
 def plot_prob(prob, classes, starttime):
 
     width = 0.75
     ind = np.arange(len(prob))
-    fig = plt.figure()
+    plt.figure()
     imax = np.argmax(prob)
     plt.barh(ind, prob, width, color='b', alpha=0.5)
-    plt.scatter(prob[imax] * 1.05, ind[imax] + width/2,  marker='*', color='black', s=250)
+    plt.scatter(prob[imax] * 1.05, ind[imax] + width / 2.,  marker='*',
+                color='black', s=250)
     plt.xlabel('Probability')
-    plt.yticks(ind + width/2., classes)
+    plt.yticks(ind + width / 2., classes)
     plt.xlim([0, prob[imax] * 1.2])
-    plt.title("%s - %s - %.2f percent" % (starttime.isoformat(), classes[imax], prob[imax]))
+    plt.title("%s - %s - %.2f percent" % (starttime.isoformat(), classes[imax],
+                                          prob[imax] * 100.))
 
     plt.show()
-      
+
+
 def run_predict(args):
 
     # get configuration
     cfg = io.Config(args.config_file)
 
     # set up classifiers to use
-    clf_dict, clf_df = clf_dict_to_sta_dataframe(cfg.clf_fname, cfg.station_names)
+    clf_dict, clf_df = clf_dict_to_sta_dataframe(cfg.clf_fname,
+                                                 cfg.station_names)
     with open(cfg.best_atts_fname, 'r') as f_:
         best_atts = pickle.load(f_)
 
-
     # request data from the stations
     if cfg.do_use_saved_data:
-        #data_fname = os.path.join(data_dir, "55703_PF.*.MSEED")
         data_fname = os.path.join(cfg.data_dir, "39160_PF.*.MSEED")
-        st = read(data_fname, starttime=args.starttime, endtime=args.starttime
-                  + args.duration)
+        st = read(data_fname, starttime=args.starttime,
+                  endtime=args.starttime + args.duration)
     else:
         raise NotImplementedError
 
@@ -104,7 +109,7 @@ def run_predict(args):
                 df_att_sta.rename(columns={a: new_a}, inplace=True)
 
             # if this is the first station just copy the data-frame
-            if sta == sta_names[0]: 
+            if sta == sta_names[0]:
                 X_df = df_att_sta.copy()
             else:
                 # join it on to the previous one
@@ -119,19 +124,21 @@ def run_predict(args):
     print "Event is %s with probability %0.2f" % (y[0], np.max(p_matrix))
     plot_prob(p_matrix[0, :], clf.classes_, args.starttime)
 
+
 if __name__ == '__main__':
 
     # set up parser
     cl_parser = argparse.ArgumentParser(description='Launch classification.')
     cl_parser.add_argument('config_file', help='eqdiscrim configuration file')
-    cl_parser.add_argument('starttime', type=UTCDateTime, 
+    cl_parser.add_argument('starttime', type=UTCDateTime,
                            help='Timestamp of first point in window')
-    cl_parser.add_argument('duration', help='Window duration in seconds', type=float)
+    cl_parser.add_argument('duration', help='Window duration in seconds',
+                           type=float)
 
     # parse input
-    args = cl_parser.parse_args(['eqdiscrim_test.cfg', '2014-01-04T13:02:28', '7.8'])
+    args = cl_parser.parse_args(['eqdiscrim_test.cfg', '2014-01-04T13:02:28',
+                                 '7.8'])
     # args = cl_parser.parse_args()
 
     # run program
     run_predict(args)
-
