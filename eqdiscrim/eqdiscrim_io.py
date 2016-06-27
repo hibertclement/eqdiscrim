@@ -88,6 +88,8 @@ class Config(object):
                          config.get('Learning', 'best_atts_fname'))
         self.clf_fname = \
             os.path.join(self.runfile_dir, config.get('Learning', 'clf_fname'))
+        self.good_analysts = self.parse_list_(config.get('Learning',
+                                                         'good_analysts'))
 
     def parse_list_(self, list_as_string):
 

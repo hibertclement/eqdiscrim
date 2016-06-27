@@ -50,7 +50,8 @@ def run_classification(cfg, X_df, sta, output_info=False):
 
     # get the list of attributes we are interested in
     atts = X_df.columns[5:].values
-    X = X_df[atts].values
+    atts_with_analyst = X_df.columns[4:].values
+    X = X_df[atts_with_analyst].values
     y = X_df['EVENT_TYPE'].values
     labels = np.unique(y)
 
@@ -60,7 +61,7 @@ def run_classification(cfg, X_df, sta, output_info=False):
     if output_info and cfg.do_learning_curve:
         print "\nProducing learning curve"
         train_sizes, train_scores, valid_scores =\
-            learning_curve(clf, X, y,
+            learning_curve(clf, X[:, 1:], y,
                            train_sizes=[500, 1000, 1500,  2000, 2250, 2500,
                                         2700, 2800, 2900, 3000, 3100, 3200],
                            cv=5, scoring=OVPF_scorer)
@@ -70,8 +71,11 @@ def run_classification(cfg, X_df, sta, output_info=False):
 
     # Uses proportionnal splitting
     X_train, X_test, y_train, y_test = train_test_split(X, y, random_state=0)
-    clf_fitted = clf.fit(X_train, y_train)
-    y_pred = clf_fitted.predict(X_test)
+    sample_weight = np.ones(len(y_train)) * 0.5
+    for analyst in cfg.good_analysts:
+        sample_weight[X_train[:, 0] == analyst] = 1.0
+    clf_fitted = clf.fit(X_train[:, 1:], y_train, sample_weight=sample_weight)
+    y_pred = clf_fitted.predict(X_test[:, 1:])
 
     if output_info:
         print('\nClassification report')
@@ -80,7 +84,7 @@ def run_classification(cfg, X_df, sta, output_info=False):
 
     if output_info:
         print('\nCross validation scores using OVPF metric')
-        cv_scores = cross_val_score(clf, X, y, scoring=OVPF_scorer, cv=5)
+        cv_scores = cross_val_score(clf, X[:, 1:], y, scoring=OVPF_scorer, cv=5)
         score_mean = np.mean(cv_scores)
         score_2std = 2 * np.std(cv_scores)
         print("%.2f (+/-) %.2f" % (score_mean, score_2std))
