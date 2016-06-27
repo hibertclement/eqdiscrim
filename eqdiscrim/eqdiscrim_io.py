@@ -137,6 +137,15 @@ class Config(object):
         # Stations
         self.station_names = self.parse_list_(config.get('Stations', 'station_names'))
 
+        # Figures
+        self.figdir = config.get('Figures', 'figdir')
+
+        # Learning
+        self.do_learning_curve = config.getboolean('Learning', 'do_learning_curve')
+        self.max_events = config.getint('Learning', 'max_events')
+        self.n_best_atts = config.getint('Learning', 'n_best_atts')
+        self.best_atts_fname = config.get('Learning', 'best_atts_fname')
+        self.clf_fname = config.get('Learning', 'clf_fname')
 
     def parse_list_(self, list_as_string):
         words = list_as_string.split(',')

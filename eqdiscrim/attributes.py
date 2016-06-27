@@ -77,7 +77,8 @@ def get_AsDec(tr, env=None):
     smooth_env = sp.smooth(env)
     
     imax = np.argmax(smooth_env)
-    AsDec = (imax+1) / float(len(tr.data) - (imax+1))
+    AsDec = (imax+1) / float(len(tr.data)+1 - (imax+1))
+    # note : the +1s are to avoid zeros or division by zero
     
     return AsDec
 

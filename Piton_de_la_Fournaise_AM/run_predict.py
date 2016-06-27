@@ -6,11 +6,14 @@ import os
 import matplotlib.pyplot as plt
 from obspy import UTCDateTime, read
 import attributes as att
+import eqdiscrim_io as io
 
 cl_parser = argparse.ArgumentParser(description='Launch classification.')
 cl_parser.add_argument('starttime', type=UTCDateTime, 
                     help='Timestamp of first point in window')
 cl_parser.add_argument('duration', help='Window duration in seconds', type=float)
+
+pd.set_option('mode.use_inf_as_null', True)
 
 def clf_dict_to_sta_dataframe(clf_fname, sta_names):
 
@@ -67,32 +70,21 @@ def plot_prob(prob, classes, starttime):
 
 if __name__ == '__main__':
 
-    # Parameters that can be modified
-    station_names = ["RVL", "BOR"]
-    classes = ['Effondrement', 'Local', 'Regional', 'Sommital', 'Teleseisme', 
-               'Phase T', 'Profond', 'Onde sonore']
-    do_use_saved_data = True
-
-    # Parameters that should not be modified
-    clf_fname = 'clf_functions.dat'
-    att_fname = 'best_attributes.dat'
-    data_dir = 'Data'
-
+    cfg = io.Config('eqdiscrim_test.cfg')
     # set up classifiers to use
-    clf_dict, clf_df = clf_dict_to_sta_dataframe(clf_fname, station_names)
-    f_ = open(att_fname)
-    best_atts = pickle.load(f_)
-    f_.close()
+    clf_dict, clf_df = clf_dict_to_sta_dataframe(cfg.clf_fname, cfg.station_names)
+    with open(cfg.best_atts_fname, 'r') as f_:
+        best_atts = pickle.load(f_)
 
     # read the argument list to get start-time and duration of event
     #args = cl_parser.parse_args(['2015-04-22T20:12:57.803130Z', '3.41'])
-    args = cl_parser.parse_args(['2009-03-27T20:09:46.430000Z', '19'])
+    args = cl_parser.parse_args(['2014-01-04T13:02:28', '7.8'])
     # args = cl_parser.parse_args()
 
     # request data from the stations
-    if do_use_saved_data:
+    if cfg.do_use_saved_data:
         #data_fname = os.path.join(data_dir, "55703_PF.*.MSEED")
-        data_fname = os.path.join(data_dir, "994_PF.*.MSEED")
+        data_fname = os.path.join(cfg.data_dir, "39160_PF.*.MSEED")
         st = read(data_fname, starttime=args.starttime, endtime=args.starttime
                   + args.duration)
     else:
@@ -129,7 +121,6 @@ if __name__ == '__main__':
                 X_df = X_df.join(df_att_sta)
 
     # run prediction and output result
-    print best_atts_clf
     X = X_df[best_atts_clf].values
     y = clf.predict(X)
     p_matrix = clf.predict_proba(X)

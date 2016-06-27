@@ -16,18 +16,6 @@ import eqdiscrim_graphics as gr
 
 pd.set_option('mode.use_inf_as_null', True)
 
-# parameters that can be modified
-do_learning_curve = False
-max_events = 500
-n_best_atts = 10
-
-# parameters that should not be modified
-figdir = 'Figures'
-att_dir = "Attributes"
-best_atts_fname = 'best_attributes.dat'
-clf_fname = 'clf_functions.dat'
-
-
 
 def OVPF_score_func(y, y_pred):
 
@@ -51,7 +39,7 @@ def balance_classes(df_full, classes):
     df_list = []
     for ev_type in classes:
         df_list.append(df_full[df_full['EVENT_TYPE'] ==
-                       ev_type].sample(n=max_events, replace=True))
+                       ev_type].sample(n=cfg.max_events, replace=True))
     X_df = pd.concat(df_list)
 
     return X_df
@@ -67,14 +55,14 @@ def run_classification(X_df, sta, output_info=False):
     # use a random forest
     clf = RandomForestClassifier(n_estimators=100)
     
-    if output_info and do_learning_curve:
+    if output_info and cfg.do_learning_curve:
         print "\nProducing learning curve"
         train_sizes, train_scores, valid_scores = learning_curve(clf, X, y,
             train_sizes=[500, 1000, 1500,  2000, 2250, 2500, 2700, 2800, 2900,
                          3000, 3100, 3200], cv=5, scoring=OVPF_scorer)
         gr.plot_learning_curve(train_sizes, train_scores, valid_scores,
                                'Random Forest at %s' % sta,
-                               os.path.join(figdir, 'learn_%s.png' % sta))
+                               os.path.join(cfg.figdir, 'learn_%s.png' % sta))
 
     # Uses proportionnal splitting
     X_train, X_test, y_train, y_test = train_test_split(X, y, random_state=0)
@@ -101,7 +89,7 @@ def run_classification(X_df, sta, output_info=False):
         print cm
         gr.plot_confusion_matrix(cm_norm, labels, '%s : %.2f (+/-) %.2f'
                              % (sta, score_mean * 100, score_2std * 100),
-                                os.path.join(figdir, 'cm_norm_%s.png' % sta))
+                                os.path.join(cfg.figdir, 'cm_norm_%s.png' % sta))
  
     return clf_fitted, atts
 
@@ -117,7 +105,7 @@ def get_important_features(clf, atts, n_max=None):
     else:
         return atts[indices[0:n_max]]
 
-def combine_best_features(sta_comb, sta_X_df, sta_best_atts):
+def combine_best_features(sta_comb, sta_X_df, sta_best_atts, station_names):
 
     for sta in sta_comb:
         X_df = sta_X_df[sta].copy()
@@ -131,7 +119,7 @@ def combine_best_features(sta_comb, sta_X_df, sta_best_atts):
                 new_atts.append(new_a)
             else:
                 X_df.drop(a, axis=1, inplace=True)
-        if sta is station_names[0]:
+        if sta == station_names[0]:
             X_multi_df = X_df.copy()
         else:
             X_multi_df = X_multi_df.join(X_df[new_atts])
@@ -142,16 +130,13 @@ def combine_best_features(sta_comb, sta_X_df, sta_best_atts):
 if __name__ == '__main__':
 
     # Parameters that can be modified
-    station_names = ["RVL", "BOR"]
-    event_types = ["Sommital", "Local", "Teleseisme", "Regional", "Profond",
-                   "Effondrement", "Onde sonore", "Phase T"]
-
+    cfg = io.Config('eqdiscrim_test.cfg')
     # ---------------
     # CODE STARTS HERE
     # ---------------
 
-    if not os.path.exists(figdir):
-        os.mkdir(figdir)
+    if not os.path.exists(cfg.figdir):
+        os.mkdir(cfg.figdir)
 
     # ------------------------
     # single stations
@@ -159,10 +144,10 @@ if __name__ == '__main__':
     sta_X_df = {}
     sta_best_atts = {}
     sta_clf = {}
-    for sta in station_names:
+    for sta in cfg.station_names:
         # read attributes
         print "\nTreating station %s... \n" % sta
-        fnames = glob.glob(os.path.join(att_dir, 'X_*_%s_*_dataframe.dat' % (sta)))
+        fnames = glob.glob(os.path.join(cfg.att_dir, 'X_*_%s_*_dataframe.dat' % (sta)))
         if len(fnames) == 0:
             continue
         X_df_full = io.read_and_cat_dataframes(fnames)
@@ -175,13 +160,13 @@ if __name__ == '__main__':
         sta_X_df[sta]=X_df_full
 
         # extract and combine classes
-        X_df = balance_classes(X_df_full, event_types)
+        X_df = balance_classes(X_df_full, cfg.event_types)
 
         # Run classification
         clf, atts = run_classification(X_df, sta)
 
         # get important features
-        best_atts = get_important_features(clf, atts, n_best_atts)
+        best_atts = get_important_features(clf, atts, cfg.n_best_atts)
 
         # re-run classification with best attributes only
         for a in atts:
@@ -195,7 +180,7 @@ if __name__ == '__main__':
     # ------------------------
     # station combinations
     # ------------------------
-    station_combinations = io.get_station_combinations(station_names)
+    station_combinations = io.get_station_combinations(cfg.station_names)
 
     # do for multiple stations
     for comb in station_combinations:
@@ -203,15 +188,16 @@ if __name__ == '__main__':
         print "\nTreating station combination : %s...\n" % sta
 
         # prepare the X matrix
-        X_multi_df = combine_best_features(comb, sta_X_df, sta_best_atts)
+        X_multi_df = combine_best_features(comb, sta_X_df, sta_best_atts,
+                                           cfg.station_names)
         X_multi_df.dropna(inplace=True)
         print X_df_full['EVENT_TYPE'].value_counts()
 
-        X_df = balance_classes(X_multi_df, event_types)
+        X_df = balance_classes(X_multi_df, cfg.event_types)
 
         # run the combined classification
         clf, atts = run_classification(X_df, sta)
-        best_atts = get_important_features(clf, atts, n_best_atts)
+        best_atts = get_important_features(clf, atts, cfg.n_best_atts)
 
         # re-run classification with best attributes only
         for a in atts:
@@ -227,12 +213,10 @@ if __name__ == '__main__':
     # ensure permanence
     # ------------------------
     # attributes
-    f_ = open(best_atts_fname, 'w')
-    pickle.dump(sta_best_atts, f_)
-    f_.close()
+    with open(cfg.best_atts_fname, 'w') as f_:
+        pickle.dump(sta_best_atts, f_)
 
     # classifiers
-    f_ = open(clf_fname, 'w')
-    pickle.dump(sta_clf, f_)
-    f_.close()
+    with open(cfg.clf_fname, 'w') as f_:
+        pickle.dump(sta_clf, f_)
 
