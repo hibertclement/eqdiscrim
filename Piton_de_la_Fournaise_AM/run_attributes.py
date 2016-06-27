@@ -17,8 +17,8 @@ do_sample_database = False
 do_get_metadata = False
 do_calc_attributes = True
 do_fake_attributes = False
-do_save_data = True
-do_use_saved_data = False
+do_save_data = False
+do_use_saved_data = True
 
 # -----------------------------------
 # LOGISTICS
@@ -77,7 +77,10 @@ def get_data_and_attributes(catalog_df, staname, indexes, obs='OVPF'):
 
             elif do_use_saved_data:
                 st_fname = os.path.join(data_dir, "%d_PF.%s.*MSEED" % (index, staname))
-                st = read(st_fname)
+                try:
+                    st = read(st_fname)
+                except:
+                    st = None
 
             else:
                 if staname is 'BOR':
@@ -94,7 +97,12 @@ def get_data_and_attributes(catalog_df, staname, indexes, obs='OVPF'):
                         tr_fname = os.path.join(data_dir, "%d_%s.MSEED" % (index, tr.get_id()))
                         tr.write(tr_fname, format='MSEED')
 
+            if not do_fake_attributes:
                 # actually get the attributes
+                try:
+                    st.detrend()
+                except AttributeError:
+                    raise ValueError
                 attributes, att_names =\
                     att.get_all_single_station_attributes(st)
 
@@ -230,6 +238,8 @@ else:
 print "Sampled catalog :"
 print sampled_df['EVENT_TYPE'].value_counts()
 
+# remove problematic events
+sampled_df.drop(3514, axis=0, inplace=True)
 
 # create dictionaries of sampled sub-databases according to types
 event_type_df_dict = {}

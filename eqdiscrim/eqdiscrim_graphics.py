@@ -11,9 +11,10 @@ def plot_histograms(df_list, att_list, color_list, figdir, sta):
             df = df_list[i]
             c = color_list[i]
             label = df['EVENT_TYPE'].unique()[0]
-            df[att_name].apply(np.log).plot.hist(20, alpha=0.5, normed=True,
+            df[att_name].apply(np.log10).plot.hist(20, alpha=0.5, normed=True,
                                                  color=c, label=label)
-        plt.legend()
+        plt.legend(loc='best')
+        plt.xlabel('Log_10 (attribute)')
         plt.title("%s - %s" % (sta, att_name))
         plt.savefig(os.path.join(figdir, "%s_%s_hist.png" % (sta, att_name)))
 
@@ -30,18 +31,27 @@ def plot_scatterplots(df_list, att_list, color_list, figdir, sta):
                     df = df_list[i_df]
                     c = color_list[i_df]
                     label = df['EVENT_TYPE'].unique()[0]
-                    if i_df == 0:
-                        ax = df.plot.scatter(x=att_i, y=att_j, color=c, alpha=0.2, label=label,
-                                         logx=True, logy=True)
-                    else:
-                        df.plot.scatter(x=att_i, y=att_j, color=c, alpha=0.2, label=label,
-                                         logx=True, logy=True, ax=ax)
+                    ax = plt.scatter(df[att_i], df[att_j], color=c, alpha=0.2,
+                                    label=label)
+                plt.xscale('log')
+                plt.yscale('log')
+                plt.legend(loc='best')
                 plt.xlabel(att_i)
                 plt.ylabel(att_j)
                 plt.title("%s : %s vs %s" % (sta, att_j, att_i))
                 plt.savefig(os.path.join(figdir, "%s_%s_%s_scatter.png" % (sta,
                                          att_j, att_i)))
 
+def plot_lda(X_r2, y, classes, color_list, figdir, sta):
+
+    plt.figure()
+    for c, i, target_name in zip(color_list, range(len(classes)), classes):
+        plt.scatter(X_r2[y == classes[i], 0], X_r2[y == classes[i], 1], c=c,
+                    label=target_name)
+    plt.legend(loc='best')
+    plt.title('LDA on %s' % sta)
+    plt.savefig(os.path.join(figdir, "%s_LDA.png" % (sta)))
+    
  
 def plot_att_timeseries(df_list, att_list, color_list, figdir, sta):
    # time plots

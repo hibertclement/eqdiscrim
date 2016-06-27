@@ -4,23 +4,28 @@ import glob
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
+from sklearn.discriminant_analysis import LinearDiscriminantAnalysis
 import eqdiscrim_io as io
 import eqdiscrim_graphics as gr
 
 # ---------------------
 # SWITCHES
-do_histograms = False
+do_histograms = True
 do_scatterplots = False
+do_lda_plots = False
 do_timeplots = False
 do_radviz = False
 # ---------------------
 
 # ---------------------
 # Parameters
-station_names = ["RVL"]
-att_dir = "Attributes_old"
+station_names = ["RVL", "BOR"]
+att_dir = "Attributes"
 figdir = 'Figures'
-color_list = ['b', 'g', 'r', 'y', 'c', 'm', 'k']
+color_list = ['b', 'g', 'r', 'y', 'c', 'm', 'k', 'pink']
+event_types = ['Teleseisme', 'Regional', 'Local', 'Sommital', 'Profond',
+               'Effondrement', 'Phase T', 'Onde sonore']
+best_atts_fname = 'best_attributes.dat'
 # ---------------------
 
 # ---------------------
@@ -42,17 +47,19 @@ for sta in station_names:
         continue
     print "Reading and concatenating %d dataframes" % len(fnames)
     X_df_full = io.read_and_cat_dataframes(fnames)
-    print X_df_full['EVENT_TYPE'].value_counts()
-    print X_df_full[X_df_full['EVENT_TYPE'] == 'Teleseisme'].head()
 
     # drop all lines containing nan
     print "Dropping all rows containing NaN"
     X_df_full.dropna(inplace=True)
 
-    all_atts = X_df_full.columns[5:]
-
-    print X_df_full['EVENT_TYPE'].value_counts()
-    event_types = X_df_full['EVENT_TYPE'].unique()
+    # if have best_atts, then use them
+    if os.path.exists(best_atts_fname):
+        f_ = open(best_atts_fname, 'r')
+        att_dict = pickle.load(f_)
+        all_atts = att_dict[sta][0:3]
+        f_.close()
+    else:
+        all_atts = X_df_full.columns[5:]
 
     # extract the subsets according to type
     print "Extracting events according to type"
@@ -73,6 +80,24 @@ for sta in station_names:
             (len(df_list), len(all_atts))
         gr.plot_scatterplots(df_list, all_atts, color_list, figdir, sta)
 
+    # do linear discriminant analysis plot for single station
+    if do_lda_plots:
+        print "Doing and plotting LDA on %s" % sta
+        lda_df = pd.concat(df_list)
+        # only keep the 
+        for a in lda_df.columns[5:].values:
+            if a not in all_atts:
+                lda_df.drop(a, axis=1, inplace=True)
+            else:
+                lda_df[a].apply(np.log10)
+        X = lda_df[lda_df.columns[5:]].values
+        y = lda_df['EVENT_TYPE'].values
+        lda = LinearDiscriminantAnalysis(n_components=2)
+        X_r2 = lda.fit(X, y).transform(X)
+        gr.plot_lda(X_r2, y, lda.classes_, color_list, figdir, sta)
+
+
+        pass
     # time plots
     if do_timeplots:
         print "Plotting timeseries plots for %d classes and %d attributes" %\
