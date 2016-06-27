@@ -9,6 +9,7 @@ import tempfile
 import pandas as pd
 import numpy as np
 import itertools as it
+import ConfigParser
 import base64
 from obspy import UTCDateTime, read
 from obspy.clients.fdsn import Client
@@ -100,6 +101,49 @@ class SeismicStation(object):
         message = message + "\n"
         return message
 
+class Config(object):
+
+    def __init__(self, fname):
+        config = ConfigParser.ConfigParser()
+        config.read(fname)
+
+        # Catalogs
+        self.catalog_fname = config.get('Catalogs', 'catalog_fname')
+        self.catalog_df_fname = config.get('Catalogs', 'catalog_df_fname')
+        self.catalog_df_samp_fname = config.get('Catalogs', 'catalog_df_samp_fname')
+        self.do_read_dump = config.getboolean('Catalogs', 'do_read_dump')
+        self.do_sample_database = config.getboolean('Catalogs', 'do_sample_database')
+
+        # Metadata
+        self.response_fname = config.get('Metadata', 'response_fname')
+        self.BOR_response_fname = config.get('Metadata', 'BOR_response_fname')
+        self.do_get_metadata = config.getboolean('Metadata', 'do_get_metadata')
+
+        # Attributes
+        self.att_dir = config.get('Attributes', 'att_dir')
+        self.max_events_per_file = config.getint('Attributes', 'max_events_per_file')
+        self.do_calc_attributes = config.getboolean('Attributes', 'do_calc_attributes')
+        self.do_fake_attributes = config.getboolean('Attributes', 'do_fake_attributes')
+
+        # Data
+        self.data_dir = config.get('Data', 'data_dir')
+        self.do_save_data = config.getboolean('Data', 'do_save_data')
+        self.do_use_saved_data = config.getboolean('Data', 'do_use_saved_data')
+
+        # Classes
+        self.max_events_per_type = config.getint('Classes', 'max_events_per_type')
+        self.event_types = self.parse_list_(config.get('Classes', 'event_types'))
+
+        # Stations
+        self.station_names = self.parse_list_(config.get('Stations', 'station_names'))
+
+
+    def parse_list_(self, list_as_string):
+        words = list_as_string.split(',')
+        ret_list = []
+        for w in words:
+            ret_list.append(w.strip())
+        return ret_list
 
 def get_RESIF_info(request, filename):
     urllib.urlretrieve(request, filename)

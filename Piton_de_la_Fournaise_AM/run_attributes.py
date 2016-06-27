@@ -5,37 +5,10 @@ import numpy as np
 import pickle
 import time
 import os
+import ConfigParser
 from obspy import read_inventory, UTCDateTime, read
 from obspy.io.xseed import Parser
 
-# -----------------------------------
-# SWITCHES
-# -----------------------------------
-
-do_read_dump = False
-do_sample_database = False
-do_get_metadata = False
-do_calc_attributes = True
-do_fake_attributes = False
-do_save_data = True
-do_use_saved_data = False
-
-# -----------------------------------
-# LOGISTICS
-# -----------------------------------
-
-catalog_fname = 'MC3_dump_2009_2016.csv'
-catalog_df_fname = 'df_MC3_dump_2009_2016.dat'
-catalog_df_samp_fname = 'df_MC3_dump_2009_2016_sampled.dat'
-event_types = ["Local", "Profond", "Regional", "Teleseisme", "Onde sonore",
-               "Phase T", "Sommital", "Effondrement", "Indetermine"]
-station_names = ["RVL", "BOR", "PRO", "CIL", "NSR", "NTR", "FJS", "FLR", "SNE", "BON", "BOR", "GPS", "TTR"]
-max_events_per_file = 500
-max_events_per_type = 2000
-att_dir = "Attributes"
-data_dir = "Data"
-response_fname = 'PF_response.xml'
-BOR_response_fname = 'OVPF-CP.BOR.dataless'
 
 # -----------------------------------
 # FUNCTIONS
@@ -72,19 +45,19 @@ def get_data_and_attributes(catalog_df, staname, indexes, obs='OVPF'):
             print event_type, staname, i, index, starttime.isoformat()
 
             # get the data and attributes
-            if do_fake_attributes:
+            if cfg.do_fake_attributes:
                 attributes, att_names = get_fake_attributes(starttime)
 
-            elif do_use_saved_data:
-                st_fname = os.path.join(data_dir, "%d_PF.%s.*MSEED" % (index, staname))
+            elif cfg.do_use_saved_data:
+                st_fname = os.path.join(cfg.data_dir, "%d_PF.%s.*MSEED" % (index, staname))
                 try:
                     st = read(st_fname)
                 except:
                     st = None
 
             else:
-                if staname is 'BOR':
-                        parser = Parser(BOR_response_fname)
+                if staname == 'BOR':
+                        parser = Parser(cfg.BOR_response_fname)
                         st = io.get_data_from_catalog_entry(starttime, window_length,
                                                     'PF', staname, '??Z', parser,
                                                      obs=obs, simulate=True)
@@ -92,12 +65,12 @@ def get_data_and_attributes(catalog_df, staname, indexes, obs='OVPF'):
                     st = io.get_data_from_catalog_entry(starttime, window_length,
                                                     'PF', staname, '??Z', inv,
                                                      obs=obs)
-                if do_save_data and st is not None:
+                if cfg.do_save_data and st is not None:
                     for tr in st:
-                        tr_fname = os.path.join(data_dir, "%d_%s.MSEED" % (index, tr.get_id()))
+                        tr_fname = os.path.join(cfg.data_dir, "%d_%s.MSEED" % (index, tr.get_id()))
                         tr.write(tr_fname, format='MSEED')
 
-            if not do_fake_attributes:
+            if not cfg.do_fake_attributes:
                 # actually get the attributes
                 try:
                     st.detrend()
@@ -185,78 +158,83 @@ def calc_and_write_attributes(df_samp, ev_type, staname, att_dir,
 
 
 # CODE STARTS HERE
+if __name__ == '__main__':
 
-# make output directories if they do not exist
-if not os.path.exists(att_dir):
-    os.mkdir(att_dir)
-if do_save_data and not os.path.exists(data_dir):
-    os.mkdir(data_dir)
+    cfg = io.Config('eqdiscrim_test.cfg')
 
-# get metadata for all the stations
-if do_get_metadata:
-    print("Getting station xml for PF network")
-    io.get_webservice_metadata('PF', response_fname)
-inv = read_inventory(response_fname)
 
-# read catalog
-if do_read_dump:
-    # read the dump file
-    print("\nReading OVPF catalog and writing dataframe")
-    catalog_df = io.read_MC3_dump_file(catalog_fname)
-    f_ = open(catalog_df_fname, 'w')
-    pickle.dump(catalog_df, f_)
-    f_.close()
-else:
-    # read the full dataframe file
-    print("\nReading OVPF catalog dataframe")
-    f_ = open(catalog_df_fname, 'r')
-    catalog_df = pickle.load(f_)
-    f_.close()
-print "Full catalog :"
-print catalog_df['EVENT_TYPE'].value_counts()
+    # make output directories if they do not exist
+    if not os.path.exists(cfg.att_dir):
+        os.mkdir(cfg.att_dir)
+    if cfg.do_save_data and not os.path.exists(cfg.data_dir):
+        os.mkdir(cfg.data_dir)
 
-# sample the database
-if do_sample_database:
-    # Re-sample the database
-    print("\nResampling the dataframe with maximum number of events per type = %d"
-          % max_events_per_type)
-    event_df_list = []
-    for ev_type in event_types:
-        event_df = catalog_df[catalog_df['EVENT_TYPE']==ev_type]
-        n_events = len(event_df)
-        if n_events > max_events_per_type:
-            n_events = max_events_per_type
-            df_samp = event_df.sample(n=max_events_per_type)
-        else:
-            df_samp = event_df.copy()
-        event_df_list.append(df_samp)
-    # ensure permanence of samples by writing to file
-    sampled_df = pd.concat(event_df_list)
-    f_ = open(catalog_df_samp_fname, 'w')
-    pickle.dump(sampled_df, f_)
-    f_.close()
-else:
-    # read the sampled database
-    print("\nReading the sampled dataframe")
-    f_ = open(catalog_df_samp_fname, 'r')
-    sampled_df = pickle.load(f_)
-    f_.close()
-print "Sampled catalog :"
-print sampled_df['EVENT_TYPE'].value_counts()
 
-# remove problematic events
-sampled_df.drop(3514, axis=0, inplace=True)
+    # get metadata for all the stations
+    if cfg.do_get_metadata:
+        print("Getting station xml for PF network")
+        io.get_webservice_metadata('PF', cfg.response_fname)
+    inv = read_inventory(cfg.response_fname)
 
-# create dictionaries of sampled sub-databases according to types
-event_type_df_dict = {}
-for ev_type in event_types:
-    event_type_df_dict[ev_type] = sampled_df[sampled_df['EVENT_TYPE']==ev_type]
+    # read catalog
+    if cfg.do_read_dump:
+        # read the dump file
+        print("\nReading OVPF catalog and writing dataframe")
+        catalog_df = io.read_MC3_dump_file(cfg.catalog_fname)
+        with open(cfg.catalog_df_fname, 'w') as f_:
+            pickle.dump(catalog_df, f_)
+    else:
+        # read the full dataframe file
+        print("\nReading OVPF catalog dataframe")
+        with open(cfg.catalog_df_fname, 'r') as f_:
+            catalog_df = pickle.load(f_)
+    print "Full catalog :"
+    print catalog_df['EVENT_TYPE'].value_counts()
 
-# calculate the attributes
-if do_calc_attributes:
-    # loop over event types
-    for ev_type in event_types:
-        df = event_type_df_dict[ev_type]
-        for staname in station_names: 
-            calc_and_write_attributes(df, ev_type, staname, att_dir,
-                                      max_events_per_file)
+    # sample the database
+    if cfg.do_sample_database:
+        # Re-sample the database
+        print("\nResampling the dataframe with maximum number of events per type = %d"
+          % cfg.max_events_per_type)
+        event_df_list = []
+        for ev_type in cfg.event_types:
+            event_df = catalog_df[catalog_df['EVENT_TYPE']==ev_type]
+            n_events = len(event_df)
+            if n_events > cfg.max_events_per_type:
+                n_events = cfg.max_events_per_type
+                df_samp = event_df.sample(n=n_events)
+            else:
+                df_samp = event_df.copy()
+            event_df_list.append(df_samp)
+        # ensure permanence of samples by writing to file
+        sampled_df = pd.concat(event_df_list)
+        with open(cfg.catalog_df_samp_fname, 'w') as f_:
+            pickle.dump(sampled_df, f_)
+    else:
+        # read the sampled database
+        print("\nReading the sampled dataframe")
+        with open(cfg.catalog_df_samp_fname, 'r') as f_:
+            sampled_df = pickle.load(f_)
+    print "Sampled catalog :"
+    print sampled_df['EVENT_TYPE'].value_counts()
+
+    # remove problematic events
+    try:
+        sampled_df.drop(3514, axis=0, inplace=True)
+    except ValueError:
+        pass
+
+    # create dictionaries of sampled sub-databases according to types
+    event_type_df_dict = {}
+    for ev_type in cfg.event_types:
+        event_type_df_dict[ev_type] = sampled_df[sampled_df['EVENT_TYPE']==ev_type]
+
+    # calculate the attributes
+    if cfg.do_calc_attributes:
+        # loop over event types
+        for ev_type in cfg.event_types:
+            df = event_type_df_dict[ev_type]
+            for staname in cfg.station_names: 
+                calc_and_write_attributes(df, ev_type, staname, cfg.att_dir,
+                                          cfg.max_events_per_file)
+
