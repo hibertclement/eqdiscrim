@@ -4,11 +4,33 @@ import pandas as pd
 import numpy as np
 import os
 import matplotlib.pyplot as plt
-from obspy import UTCDateTime, read
+from obspy import UTCDateTime, read, Stream, read_inventory
+from obspy.io.xseed import Parser
 import attributes as att
 import eqdiscrim_io as io
 
 pd.set_option('mode.use_inf_as_null', True)
+
+def get_data_OVPF(cfg, starttime, window_length):
+    
+    inv = read_inventory(cfg.response_fname)
+    parser = Parser(cfg.BOR_response_fname)
+
+    st = Stream()
+    for sta in cfg.station_names:
+        if sta == 'BOR':
+            st_tmp = io.get_waveform_data(starttime, window_length,
+                                                    'PF', sta, '??Z', parser,
+                                                    simulate=True)
+        else:
+            st_tmp = io.get_waveform_data(starttime, window_length,
+                                                    'PF', sta, '??Z', inv)
+
+        if st_tmp is not None:
+
+            st += st_tmp
+
+    return st
 
 
 def clf_dict_to_sta_dataframe(clf_fname, sta_names):
@@ -83,7 +105,7 @@ def run_predict(args):
         st = read(data_fname, starttime=args.starttime,
                   endtime=args.starttime + args.duration)
     else:
-        raise NotImplementedError
+        st = get_data_OVPF(cfg, args.starttime, args.duration)
 
     # select classifier as a function of which stations are present
     sta_names = np.unique([tr.stats.station for tr in st])

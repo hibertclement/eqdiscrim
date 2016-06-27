@@ -71,10 +71,16 @@ def run_classification(cfg, X_df, sta, output_info=False):
 
     # Uses proportionnal splitting
     X_train, X_test, y_train, y_test = train_test_split(X, y, random_state=0)
+    
+    # set weights according to analyst quality
     sample_weight = np.ones(len(y_train)) * 0.5
     for analyst in cfg.good_analysts:
         sample_weight[X_train[:, 0] == analyst] = 1.0
+
+    # fit classifier on training data
     clf_fitted = clf.fit(X_train[:, 1:], y_train, sample_weight=sample_weight)
+
+    # predict on test data
     y_pred = clf_fitted.predict(X_test[:, 1:])
 
     if output_info:

@@ -291,7 +291,7 @@ def get_webservice_metadata(net, fname):
     urllib.urlretrieve(url, fname)
 
 
-def get_data_from_catalog_entry(starttime, window_length, net, sta, cha, inv,
+def get_waveform_data(starttime, window_length, net, sta, cha, inv,
                                 obs='OVPF', simulate=False):
 
     # calculate the window length needed to do proper tapering / filtering

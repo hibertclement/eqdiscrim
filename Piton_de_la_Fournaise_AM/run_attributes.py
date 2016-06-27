@@ -46,14 +46,14 @@ def get_data_and_attributes(cfg, inv, catalog_df, staname, indexes,
             else:
                 if staname == 'BOR':
                     parser = Parser(cfg.BOR_response_fname)
-                    st = io.get_data_from_catalog_entry(starttime,
+                    st = io.get_waveform_data(starttime,
                                                         window_length,
                                                         'PF', staname,
                                                         '??Z', parser,
                                                         obs=obs,
                                                         simulate=True)
                 else:
-                    st = io.get_data_from_catalog_entry(starttime,
+                    st = io.get_waveform_data(starttime,
                                                         window_length,
                                                         'PF', staname, '??Z',
                                                         inv, obs=obs)
