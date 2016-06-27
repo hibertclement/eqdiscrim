@@ -123,7 +123,6 @@ class Config(object):
         self.att_dir = config.get('Attributes', 'att_dir')
         self.max_events_per_file = config.getint('Attributes', 'max_events_per_file')
         self.do_calc_attributes = config.getboolean('Attributes', 'do_calc_attributes')
-        self.do_fake_attributes = config.getboolean('Attributes', 'do_fake_attributes')
 
         # Data
         self.data_dir = config.get('Data', 'data_dir')

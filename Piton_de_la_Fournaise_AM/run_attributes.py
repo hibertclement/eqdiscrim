@@ -4,6 +4,7 @@ import pandas as pd
 import numpy as np
 import pickle
 import time
+import argparse
 import os
 import ConfigParser
 from obspy import read_inventory, UTCDateTime, read
@@ -13,17 +14,6 @@ from obspy.io.xseed import Parser
 # -----------------------------------
 # FUNCTIONS
 # -----------------------------------
-
-def get_fake_attributes(starttime):
-    """
-    Creates some fake attributes for testing purposes
-    """
-    att_names = ["Starttime", "Dummy_1", "Dummy_2", "Dummy_3", "Dummy_4"]
-    att = np.empty((1, len(att_names)), dtype=object) 
-    att[0, 0] = starttime.isoformat()
-    att[0, 1:] = np.arange(4)[:]
-
-    return att, att_names
 
 def get_data_and_attributes(catalog_df, staname, indexes, obs='OVPF'):
     """
@@ -45,10 +35,8 @@ def get_data_and_attributes(catalog_df, staname, indexes, obs='OVPF'):
             print event_type, staname, i, index, starttime.isoformat()
 
             # get the data and attributes
-            if cfg.do_fake_attributes:
-                attributes, att_names = get_fake_attributes(starttime)
 
-            elif cfg.do_use_saved_data:
+            if cfg.do_use_saved_data:
                 st_fname = os.path.join(cfg.data_dir, "%d_PF.%s.*MSEED" % (index, staname))
                 try:
                     st = read(st_fname)
@@ -70,14 +58,13 @@ def get_data_and_attributes(catalog_df, staname, indexes, obs='OVPF'):
                         tr_fname = os.path.join(cfg.data_dir, "%d_%s.MSEED" % (index, tr.get_id()))
                         tr.write(tr_fname, format='MSEED')
 
-            if not cfg.do_fake_attributes:
-                # actually get the attributes
-                try:
-                    st.detrend()
-                except AttributeError:
-                    raise ValueError
-                attributes, att_names =\
-                    att.get_all_single_station_attributes(st)
+            # actually get the attributes
+            try:
+                st.detrend()
+            except AttributeError:
+               raise ValueError
+            attributes, att_names =\
+                att.get_all_single_station_attributes(st)
 
             # create the data-frame with the attributes (using the same indexes
             # as those in the catalog)
@@ -156,12 +143,9 @@ def calc_and_write_attributes(df_samp, ev_type, staname, att_dir,
         # go onto next batch
         i_start += n_max
 
+def run_attributes(args):
 
-# CODE STARTS HERE
-if __name__ == '__main__':
-
-    cfg = io.Config('eqdiscrim_test.cfg')
-
+    cfg = io.Config(args.config_file)
 
     # make output directories if they do not exist
     if not os.path.exists(cfg.att_dir):
@@ -238,3 +222,15 @@ if __name__ == '__main__':
                 calc_and_write_attributes(df, ev_type, staname, cfg.att_dir,
                                           cfg.max_events_per_file)
 
+if __name__ == '__main__':
+
+    # set up parser
+    parser = argparse.ArgumentParser(description=
+        'Launch attribute calculation for classifier training')
+    parser.add_argument('config_file', help='eqdiscrim configuration file')
+
+    # parse input
+    args = parser.parse_args()
+
+    # run program
+    run_attributes(args)

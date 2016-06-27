@@ -2,6 +2,7 @@ import pickle
 import os
 import glob
 import string
+import argparse
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
@@ -34,7 +35,7 @@ def OVPF_score_func(y, y_pred):
     return np.mean((non_seismic_precision, seismic_recall))
 OVPF_scorer = make_scorer(OVPF_score_func)
 
-def balance_classes(df_full, classes):
+def balance_classes(df_full, classes, cfg):
 
     df_list = []
     for ev_type in classes:
@@ -126,14 +127,9 @@ def combine_best_features(sta_comb, sta_X_df, sta_best_atts, station_names):
  
     return X_multi_df
 
+def run_learn(args):
 
-if __name__ == '__main__':
-
-    # Parameters that can be modified
     cfg = io.Config('eqdiscrim_test.cfg')
-    # ---------------
-    # CODE STARTS HERE
-    # ---------------
 
     if not os.path.exists(cfg.figdir):
         os.mkdir(cfg.figdir)
@@ -160,7 +156,7 @@ if __name__ == '__main__':
         sta_X_df[sta]=X_df_full
 
         # extract and combine classes
-        X_df = balance_classes(X_df_full, cfg.event_types)
+        X_df = balance_classes(X_df_full, cfg.event_types, cfg)
 
         # Run classification
         clf, atts = run_classification(X_df, sta)
@@ -193,7 +189,7 @@ if __name__ == '__main__':
         X_multi_df.dropna(inplace=True)
         print X_df_full['EVENT_TYPE'].value_counts()
 
-        X_df = balance_classes(X_multi_df, cfg.event_types)
+        X_df = balance_classes(X_multi_df, cfg.event_types, cfg)
 
         # run the combined classification
         clf, atts = run_classification(X_df, sta)
@@ -220,3 +216,15 @@ if __name__ == '__main__':
     with open(cfg.clf_fname, 'w') as f_:
         pickle.dump(sta_clf, f_)
 
+if __name__ == '__main__':
+
+    # set up parser
+    parser = argparse.ArgumentParser(description=
+        'Launch attribute calculation for classifier training')
+    parser.add_argument('config_file', help='eqdiscrim configuration file')
+
+    # parse input
+    args = parser.parse_args()
+
+    # run program
+    run_learn(args)

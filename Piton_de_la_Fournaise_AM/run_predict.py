@@ -8,11 +8,6 @@ from obspy import UTCDateTime, read
 import attributes as att
 import eqdiscrim_io as io
 
-cl_parser = argparse.ArgumentParser(description='Launch classification.')
-cl_parser.add_argument('starttime', type=UTCDateTime, 
-                    help='Timestamp of first point in window')
-cl_parser.add_argument('duration', help='Window duration in seconds', type=float)
-
 pd.set_option('mode.use_inf_as_null', True)
 
 def clf_dict_to_sta_dataframe(clf_fname, sta_names):
@@ -65,21 +60,16 @@ def plot_prob(prob, classes, starttime):
 
     plt.show()
       
+def run_predict(args):
 
+    # get configuration
+    cfg = io.Config(args.config_file)
 
-
-if __name__ == '__main__':
-
-    cfg = io.Config('eqdiscrim_test.cfg')
     # set up classifiers to use
     clf_dict, clf_df = clf_dict_to_sta_dataframe(cfg.clf_fname, cfg.station_names)
     with open(cfg.best_atts_fname, 'r') as f_:
         best_atts = pickle.load(f_)
 
-    # read the argument list to get start-time and duration of event
-    #args = cl_parser.parse_args(['2015-04-22T20:12:57.803130Z', '3.41'])
-    args = cl_parser.parse_args(['2014-01-04T13:02:28', '7.8'])
-    # args = cl_parser.parse_args()
 
     # request data from the stations
     if cfg.do_use_saved_data:
@@ -128,3 +118,20 @@ if __name__ == '__main__':
     # do plot and print
     print "Event is %s with probability %0.2f" % (y[0], np.max(p_matrix))
     plot_prob(p_matrix[0, :], clf.classes_, args.starttime)
+
+if __name__ == '__main__':
+
+    # set up parser
+    cl_parser = argparse.ArgumentParser(description='Launch classification.')
+    cl_parser.add_argument('config_file', help='eqdiscrim configuration file')
+    cl_parser.add_argument('starttime', type=UTCDateTime, 
+                           help='Timestamp of first point in window')
+    cl_parser.add_argument('duration', help='Window duration in seconds', type=float)
+
+    # parse input
+    args = cl_parser.parse_args(['eqdiscrim_test.cfg', '2014-01-04T13:02:28', '7.8'])
+    # args = cl_parser.parse_args()
+
+    # run program
+    run_predict(args)
+
