@@ -51,5 +51,8 @@ def nextpow2(i):
 
 def find_peaks(sig, thresh):
     itriggers = trigger_onset(sig, thres1=thresh, thres2=thresh)
-    n_peaks, n_bid = itriggers.shape
+    try:
+        n_peaks, n_bid = itriggers.shape
+    except AttributeError:
+        n_peaks = 0
     return n_peaks, itriggers

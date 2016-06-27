@@ -4,20 +4,23 @@ from scipy.stats import kurtosis, skew
 from scipy.signal import hilbert, find_peaks_cwt
 from obspy.signal.filter import envelope
 
-def get_all_single_station_attributes(st):
-
-    NaN_value = -12345.0
-    min_length = 11
-
-    att_names = list(['AsDec', 'Duration', 'RappMaxMean', 'RappMaxMedian',
-                      'RappMaxStd', 'KurtoEnv', 'KurtoSig', 'SkewnessEnv',
-                      'SkewnessSig', 'CorPeakNumber', 'int_ratio',
-                      'ES1', 'ES2', 'ES3', 'ES4', 'ES5',
+att_names_single_station_1D = list(['AsDec', 'Duration', 'RappMaxMean',
+                      'RappMaxMedian', 'RappMaxStd', 'KurtoEnv', 'KurtoSig',
+                      'SkewnessEnv', 'SkewnessSig', 'CorPeakNumber',
+                      'int_ratio', 'ES1', 'ES2', 'ES3', 'ES4', 'ES5',
                       'KurtoF1', 'KurtoF2', 'KurtoF3', 'KurtoF4', 'KurtoF5',
                       'MeanFFT', 'MaxFFT', 'FmaxFFT', 'MedianFFT', 'VarFFT',
                       'FCentroid', 'Fquart1', 'Fquart3', 'NpeakFFT',
                       'MeanPeaksFFT', 'E1FFT', 'E2FFT', 'E3FFT', 'E4FFT',
                       'gamma1', 'gamma2', 'gammas', 'MaxAmp', 'DurOverAmp'])
+
+def get_all_single_station_attributes(st):
+
+    NaN_value = -12345.0
+    min_length = 11
+
+    # set attribute names
+    att_names = att_names_single_station_1D
 
     if st is None or len(st) == 0:
         # return names of attributes and NaN values

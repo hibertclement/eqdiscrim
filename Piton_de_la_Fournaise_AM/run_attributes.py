@@ -17,8 +17,8 @@ do_sample_database = False
 do_get_metadata = False
 do_calc_attributes = True
 do_fake_attributes = False
-do_save_data = False
-do_use_saved_data = True
+do_save_data = True
+do_use_saved_data = False
 
 # -----------------------------------
 # LOGISTICS
@@ -120,10 +120,16 @@ def get_data_and_attributes(catalog_df, staname, indexes, obs='OVPF'):
             # if there are problems, then set attributes to NaN
             print 'Problem at %d (%d)  - Setting all attributes to NaN' %\
                   (i, index)
-            att_names = df_att.columns.values
+            try:
+                att_names = df_att.columns.values
+            except UnboundLocalError:
+                att_names = att.att_names_single_station_1D
             nan = np.ones((1, len(att_names))) * np.nan
             df_att_tmp = pd.DataFrame(nan, columns=att_names, index=[index])
-            df_att = df_att.append(df_att_tmp, ignore_index=False)
+            try:
+                df_att = df_att.append(df_att_tmp, ignore_index=False)
+            except UnboundLocalError:
+                df_att = df_att_tmp
             continue
 
     # join the attributes onto the portion of the catalog data-frame
