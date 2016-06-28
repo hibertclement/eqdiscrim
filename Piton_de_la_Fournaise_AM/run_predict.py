@@ -1,4 +1,5 @@
 import pickle
+import glob
 import argparse
 import pandas as pd
 import numpy as np
@@ -33,14 +34,16 @@ def get_data_OVPF(cfg, starttime, window_length):
     return st
 
 
-def clf_dict_to_sta_dataframe(clf_fname, sta_names):
+def create_clf_dict_and_dataframe(clfdir, sta_names):
 
-    f_ = open(clf_fname, 'r')
-    clf_dict = pickle.load(f_)
-    f_.close()
+    clf_fnames = glob.glob(os.path.join(clfdir, 'clf_*.dat'))
+    clf_dict = {}
+    for fname in clf_fnames:
+        sta = os.path.basename(fname).split('_')[1].split('.')[0]
+        clf_dict[sta] = fname
 
     index = clf_dict.keys()
-
+    
     series = {}
     for sta in sta_names:
         series[sta] = pd.Series([sta in ind for ind in index], index=index)
@@ -90,11 +93,13 @@ def plot_prob(prob, classes, starttime):
 
 def run_predict(args):
 
+    import pdb; pdb.set_trace()
+
     # get configuration
     cfg = io.Config(args.config_file)
 
     # set up classifiers to use
-    clf_dict, clf_df = clf_dict_to_sta_dataframe(cfg.clf_fname,
+    clf_dict, clf_df = create_clf_dict_and_dataframe(cfg.clfdir,
                                                  cfg.station_names)
     with open(cfg.best_atts_fname, 'r') as f_:
         best_atts = pickle.load(f_)
@@ -158,7 +163,7 @@ if __name__ == '__main__':
                            type=float)
 
     # parse input
-    args = cl_parser.parse_args(['eqdiscrim_test.cfg', '2014-01-04T13:02:28',
+    args = cl_parser.parse_args(['eqdiscrim_am.cfg', '2014-01-04T13:02:28',
                                  '7.8'])
     # args = cl_parser.parse_args()
 

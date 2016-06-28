@@ -32,6 +32,7 @@ def OVPF_score_func(y, y_pred):
                                                      'Profond'],
                                   average='weighted')
     return np.mean((non_seismic_precision, seismic_recall))
+
 OVPF_scorer = make_scorer(OVPF_score_func)
 
 
@@ -39,14 +40,18 @@ def balance_classes(cfg, df_full, classes):
 
     df_list = []
     for ev_type in classes:
-        df_list.append(df_full[df_full['EVENT_TYPE'] ==
-                       ev_type].sample(n=cfg.max_events, replace=True))
+        try:
+            df_list.append(df_full[df_full['EVENT_TYPE'] ==
+                                   ev_type].sample(n=cfg.max_events,
+                                                   replace=True))
+        except ValueError:
+            continue
     X_df = pd.concat(df_list)
 
     return X_df
 
 
-def run_classification(cfg, X_df, sta, output_info=False):
+def run_classification(cfg, X_df, sta, cross_valid=False, output_info=False):
 
     # get the list of attributes we are interested in
     atts = X_df.columns[5:].values
@@ -83,17 +88,21 @@ def run_classification(cfg, X_df, sta, output_info=False):
     # predict on test data
     y_pred = clf_fitted.predict(X_test[:, 1:])
 
-    if output_info:
-        print('\nClassification report')
-        cr = classification_report(y_test, y_pred, target_names=labels)
-        print cr
-
-    if output_info:
+    # get cross_validation score
+    if cross_valid:
         print('\nCross validation scores using OVPF metric')
         cv_scores = cross_val_score(clf, X[:, 1:], y, scoring=OVPF_scorer, cv=5)
         score_mean = np.mean(cv_scores)
         score_2std = 2 * np.std(cv_scores)
         print("%.2f (+/-) %.2f" % (score_mean, score_2std))
+    else:
+        score_mean = None
+
+    if output_info:
+        print('\nClassification report')
+        cr = classification_report(y_test, y_pred, target_names=labels)
+        print cr
+
 
     if output_info:
         print('\nConfusion matrix')
@@ -105,7 +114,7 @@ def run_classification(cfg, X_df, sta, output_info=False):
                                  os.path.join(cfg.figdir,
                                               'cm_norm_%s.png' % sta))
 
-    return clf_fitted, atts
+    return clf_fitted, atts, score_mean
 
 
 def get_important_features(clf, atts, n_max=None):
@@ -132,27 +141,31 @@ def combine_best_features(sta_comb, sta_X_df, sta_best_atts, station_names):
                 new_atts.append(new_a)
             else:
                 X_df.drop(a, axis=1, inplace=True)
-        if sta == station_names[0]:
-            X_multi_df = X_df.copy()
-        else:
+        try:
             X_multi_df = X_multi_df.join(X_df[new_atts])
+        except UnboundLocalError:
+            X_multi_df = X_df.copy()
 
     return X_multi_df
 
 
 def run_learn(args):
 
-    cfg = io.Config('eqdiscrim_test.cfg')
+    cfg = io.Config(args.config_file)
 
     if not os.path.exists(cfg.figdir):
         os.mkdir(cfg.figdir)
+
+    if not os.path.exists(cfg.clfdir):
+        os.mkdir(cfg.clfdir)
 
     # ------------------------
     # single stations
     # ------------------------
     sta_X_df = {}
     sta_best_atts = {}
-    sta_clf = {}
+    with open(cfg.scores_fname, 'w') as f_:
+        f_.write("STA_COMB, SCORE\n")
     for sta in cfg.station_names:
         # read attributes
         print "\nTreating station %s... \n" % sta
@@ -173,7 +186,7 @@ def run_learn(args):
         X_df = balance_classes(cfg, X_df_full, cfg.event_types)
 
         # Run classification
-        clf, atts = run_classification(cfg, X_df, sta)
+        clf, atts, score = run_classification(cfg, X_df, sta)
 
         # get important features
         best_atts = get_important_features(clf, atts, cfg.n_best_atts)
@@ -182,10 +195,15 @@ def run_learn(args):
         for a in atts:
             if a not in best_atts:
                 X_df.drop(a, axis=1, inplace=True)
-        clf, atts = run_classification(cfg, X_df, sta)
+        clf, atts, score = run_classification(cfg, X_df, sta, cross_valid=True,
+                                              output_info=cfg.output_info)
 
+        clf_fname = os.path.join(cfg.clfdir, 'clf_%s.dat' % sta)
+        with open(clf_fname, 'w') as f_:
+            pickle.dump(clf, f_)
+        with open(cfg.scores_fname, 'a') as f_:
+            f_.write("%s %.2f\n" % (sta, score))
         sta_best_atts[sta] = X_df.columns.values[5:]
-        sta_clf[sta] = clf
 
     # ------------------------
     # station combinations
@@ -206,18 +224,23 @@ def run_learn(args):
         X_df = balance_classes(cfg, X_multi_df, cfg.event_types)
 
         # run the combined classification
-        clf, atts = run_classification(cfg, X_df, sta)
+        clf, atts, score = run_classification(cfg, X_df, sta)
         best_atts = get_important_features(clf, atts, cfg.n_best_atts)
 
         # re-run classification with best attributes only
         for a in atts:
             if a not in best_atts:
                 X_df.drop(a, axis=1, inplace=True)
-        clf, atts = run_classification(cfg, X_df, sta)
+        clf, atts, score = run_classification(cfg, X_df, sta, cross_valid=True,
+                                              output_info=cfg.output_info)
 
-        # save best attributes and classifier
+        # save best attributes and classifier and score
         sta_best_atts[sta] = X_df.columns.values[5:]
-        sta_clf[sta] = clf
+        clf_fname = os.path.join(cfg.clfdir, 'clf_%s.dat' % sta)
+        with open(clf_fname, 'w') as f_:
+            pickle.dump(clf, f_)
+        with open(cfg.scores_fname, 'a') as f_:
+            f_.write("%s %.2f\n" % (sta, score))
 
     # ------------------------
     # ensure permanence
@@ -226,9 +249,7 @@ def run_learn(args):
     with open(cfg.best_atts_fname, 'w') as f_:
         pickle.dump(sta_best_atts, f_)
 
-    # classifiers
-    with open(cfg.clf_fname, 'w') as f_:
-        pickle.dump(sta_clf, f_)
+    # scores
 
 
 if __name__ == '__main__':

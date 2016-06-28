@@ -70,6 +70,7 @@ class Config(object):
                                                  'max_events_per_type')
         self.event_types = self.parse_list_(config.get('Classes',
                                                        'event_types'))
+        self.clfdir = config.get('Classes', 'clfdir') 
 
         # Stations
         self.station_names = self.parse_list_(config.get('Stations',
@@ -81,13 +82,15 @@ class Config(object):
         # Learning
         self.do_learning_curve = config.getboolean('Learning',
                                                    'do_learning_curve')
+        self.output_info = config.getboolean('Learning', 'output_info')
         self.max_events = config.getint('Learning', 'max_events')
         self.n_best_atts = config.getint('Learning', 'n_best_atts')
         self.best_atts_fname = \
             os.path.join(self.runfile_dir,
                          config.get('Learning', 'best_atts_fname'))
-        self.clf_fname = \
-            os.path.join(self.runfile_dir, config.get('Learning', 'clf_fname'))
+        self.scores_fname = \
+            os.path.join(self.runfile_dir, config.get('Learning',
+                                                      'scores_fname'))
         self.good_analysts = self.parse_list_(config.get('Learning',
                                                          'good_analysts'))
 
