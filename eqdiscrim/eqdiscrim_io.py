@@ -75,6 +75,8 @@ class Config(object):
         # Stations
         self.station_names = self.parse_list_(config.get('Stations',
                                                          'station_names'))
+        self.n_stations_per_group = config.getint('Stations',
+                                                  'n_stations_per_group')
 
         # Figures
         self.figdir = config.get('Figures', 'figdir')
@@ -364,12 +366,18 @@ def read_and_cat_dataframes(fnames):
     return X_df_full
 
 
-def get_station_combinations(station_names):
+def get_station_combinations(station_names, n=None):
     comb_list = []
-    n_sta = len(station_names)
-    for i in xrange(n_sta-1):
-        ii = i + 2
-        for comb in it.combinations(station_names, ii):
+    if n is None:
+        # do all possible combinations
+        n_sta = len(station_names)
+        for i in xrange(n_sta-1):
+            ii = i + 2
+            for comb in it.combinations(station_names, ii):
+                comb_list.append(comb)
+    else:
+        # do the combinations requested
+        for comb in it.combinations(station_names, n):
             comb_list.append(comb)
 
     return comb_list

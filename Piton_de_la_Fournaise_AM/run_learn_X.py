@@ -208,7 +208,8 @@ def run_learn(args):
     # ------------------------
     # station combinations
     # ------------------------
-    station_combinations = io.get_station_combinations(cfg.station_names)
+    station_combinations = io.get_station_combinations(cfg.station_names,
+                                                      cfg.n_stations_per_group)
 
     # do for multiple stations
     for comb in station_combinations:
