@@ -96,6 +96,10 @@ class Config(object):
         self.good_analysts = self.parse_list_(config.get('Learning',
                                                          'good_analysts'))
 
+        # Predict
+        self.combinations = self.parse_list_(config.get('Predict',
+                                                         'combinations'))
+
     def parse_list_(self, list_as_string):
 
         words = list_as_string.split(',')

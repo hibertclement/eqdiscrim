@@ -33,6 +33,16 @@ def get_data_OVPF(cfg, starttime, window_length):
 
     return st
 
+def get_clf_dict_from_combinations(combinations, clfdir):
+
+    clf_dict = {}
+    for key in combinations:
+        fname = os.path.join(clfdir, 'clf_%s.dat' % key)
+        with open(fname, 'r') as f_:
+            clf = pickle.load(f_)
+            clf_dict[key] = clf
+
+    return clf_dict
 
 def create_clf_dict_and_dataframe(clfdir, sta_names):
 
@@ -73,6 +83,26 @@ def get_clf_key_from_stalist(clf_df, sta_list):
     return df.index.values[0]
 
 
+def get_clf_key_from_stalist_and_combinations(sta_list, combinations):
+    
+    for key in combinations:
+        key_stas = key.split('+')
+        for sta in key_stas:
+            if sta in sta_list:
+                found_key = True
+            else:
+                found_key = False
+                break
+            # if you get here, then this combination is good
+            if found_key:
+                break
+            
+    if found_key:
+        return key
+    else:
+        return None
+
+
 def plot_prob(prob, classes, starttime):
 
     width = 0.75
@@ -93,17 +123,18 @@ def plot_prob(prob, classes, starttime):
 
 def run_predict(args):
 
-    import pdb; pdb.set_trace()
+    # import pdb; pdb.set_trace()
+    import time
 
+    t1 = time.time()
+    
     # get configuration
     cfg = io.Config(args.config_file)
 
     # set up classifiers to use
-    clf_dict, clf_df = create_clf_dict_and_dataframe(cfg.clfdir,
-                                                 cfg.station_names)
-    with open(cfg.best_atts_fname, 'r') as f_:
-        best_atts = pickle.load(f_)
+    clf_dict = get_clf_dict_from_combinations(cfg.combinations, cfg.clfdir)
 
+    t2 = time.time()
     # request data from the stations
     if cfg.do_use_saved_data:
         data_fname = os.path.join(cfg.data_dir, "39160_PF.*.MSEED")
@@ -111,13 +142,21 @@ def run_predict(args):
                   endtime=args.starttime + args.duration)
     else:
         st = get_data_OVPF(cfg, args.starttime, args.duration)
+    t3 = time.time()
 
     # select classifier as a function of which stations are present
     sta_names = np.unique([tr.stats.station for tr in st])
-    clf_key = get_clf_key_from_stalist(clf_df, sta_names)
+    # clf_key = get_clf_key_from_stalist(clf_dict, sta_names)
+    clf_key = get_clf_key_from_stalist_and_combinations(sta_names,
+                                                        cfg.combinations)
     clf = clf_dict[clf_key]
+
+    # read best attributes file and get the best attributes
+    with open(cfg.best_atts_fname, 'r') as f_:
+        best_atts = pickle.load(f_)
     best_atts_clf = best_atts[clf_key]
 
+    t4 = time.time()
     # calculate attributes, combine and prune according to classifier
     n_sta = len(sta_names)
     for sta in sta_names:
@@ -141,14 +180,21 @@ def run_predict(args):
             else:
                 # join it on to the previous one
                 X_df = X_df.join(df_att_sta)
+    t5 = time.time()
 
     # run prediction and output result
     X = X_df[best_atts_clf].values
     y = clf.predict(X)
     p_matrix = clf.predict_proba(X)
+    t6 = time.time()
 
     # do plot and print
     print "Event is %s with probability %0.2f" % (y[0], np.max(p_matrix))
+    print "Time for entire process %0.2f" % (t6-t1)
+    print "Time for data request %0.2f" % (t3-t2)
+    print "Time for attribute calculation %0.2f" % (t5-t4)
+    print "Time for prediction %0.2f" % (t6-t5)
+    
     plot_prob(p_matrix[0, :], clf.classes_, args.starttime)
 
 
@@ -162,9 +208,19 @@ if __name__ == '__main__':
     cl_parser.add_argument('duration', help='Window duration in seconds',
                            type=float)
 
+    # Effondrement
+    # args = cl_parser.parse_args(['eqdiscrim_VF.cfg', '2016-06-02T20:22:25.60',
+    #                              '5.96'])
+
+    # Sommital
+    # args = cl_parser.parse_args(['eqdiscrim_VF.cfg', '2016-06-08T20:57:24.54',
+    #                             '3.8'])
+
+    # Indetermine
+    # args = cl_parser.parse_args(['eqdiscrim_VF.cfg', '2016-06-04T03:48:28.52',
+    #                             '11.64'])
+
     # parse input
-    args = cl_parser.parse_args(['eqdiscrim_am.cfg', '2014-01-04T13:02:28',
-                                 '7.8'])
     # args = cl_parser.parse_args()
 
     # run program
