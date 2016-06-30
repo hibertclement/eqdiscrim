@@ -61,7 +61,7 @@ def run_classification(cfg, X_df, sta, cross_valid=False, output_info=False):
     labels = np.unique(y)
 
     # use a random forest
-    clf = RandomForestClassifier(n_estimators=100)
+    clf = RandomForestClassifier(n_estimators=100, class_weight='balanced')
 
     if output_info and cfg.do_learning_curve:
         print "\nProducing learning curve"
@@ -184,6 +184,7 @@ def run_learn(args):
 
         # extract and combine classes
         X_df = balance_classes(cfg, X_df_full, cfg.event_types)
+        # X_df = X_df_full.copy()
 
         # Run classification
         clf, atts, score = run_classification(cfg, X_df, sta)
@@ -223,6 +224,7 @@ def run_learn(args):
         print X_df_full['EVENT_TYPE'].value_counts()
 
         X_df = balance_classes(cfg, X_multi_df, cfg.event_types)
+        # X_df = X_df_full.copy()
 
         # run the combined classification
         clf, atts, score = run_classification(cfg, X_df, sta)

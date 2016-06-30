@@ -103,7 +103,7 @@ def get_clf_key_from_stalist_and_combinations(sta_list, combinations):
         return None
 
 
-def plot_prob(prob, classes, starttime):
+def plot_prob(prob, classes, starttime, cfg):
 
     width = 0.75
     ind = np.arange(len(prob))
@@ -118,6 +118,9 @@ def plot_prob(prob, classes, starttime):
     plt.title("%s - %s - %.2f percent" % (starttime.isoformat(), classes[imax],
                                           prob[imax] * 100.))
 
+    fname = '%s_%s_%.2f.png' % (starttime.isoformat(), classes[imax],
+                                prob[imax])
+    plt.savefig(os.path.join(cfg.figdir, fname))
     plt.show()
 
 
@@ -195,7 +198,7 @@ def run_predict(args):
     print "Time for attribute calculation %0.2f" % (t5-t4)
     print "Time for prediction %0.2f" % (t6-t5)
     
-    plot_prob(p_matrix[0, :], clf.classes_, args.starttime)
+    plot_prob(p_matrix[0, :], clf.classes_, args.starttime, cfg)
 
 
 if __name__ == '__main__':
@@ -220,8 +223,12 @@ if __name__ == '__main__':
     # args = cl_parser.parse_args(['eqdiscrim_VF.cfg', '2016-06-04T03:48:28.52',
     #                             '11.64'])
 
+    # Local
+    # args = cl_parser.parse_args(['eqdiscrim_VF.cfg', '2016-06-04T07:18:20.12',
+    #                              '9.4'])
+
     # parse input
-    # args = cl_parser.parse_args()
+    args = cl_parser.parse_args()
 
     # run program
     run_predict(args)
