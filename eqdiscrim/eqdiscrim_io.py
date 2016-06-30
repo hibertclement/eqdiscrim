@@ -81,6 +81,7 @@ class Config(object):
         # Figures
         self.figdir = config.get('Figures', 'figdir')
         self.do_histograms = config.getboolean('Figures', 'do_histograms')
+        self.do_att_matrix = config.getboolean('Figures', 'do_att_matrix')
         self.do_scatterplots = config.getboolean('Figures', 'do_scatterplots')
         self.do_lda_plots = config.getboolean('Figures', 'do_lda_plots')
         self.do_timeplots = config.getboolean('Figures', 'do_timeplots')
