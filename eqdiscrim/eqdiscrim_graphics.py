@@ -124,7 +124,7 @@ def plot_att_matrix(matrix, row_names, col_names, figdir,
                           cmap=plt.cm.Blues):
     fname = os.path.join(figdir, 'attribute_matrix.png')
 
-    fig = plt.figure(figsize=(15, 5))
+    fig = plt.figure(figsize=(15, 6))
     plt.imshow(matrix, interpolation='nearest', cmap=cmap)
     x_tick_marks = np.arange(len(col_names))
     y_tick_marks = np.arange(len(row_names))

@@ -16,12 +16,13 @@ pd.set_option('mode.use_inf_as_null', True)
 def make_att_matrix(all_atts_dict, cfg):
 
     ncols = len(cfg.station_names) * cfg.n_best_atts
-    nrows = len(cfg.station_names) + len(cfg.combinations)
+    nrows = len(all_atts_dict.keys())
     matrix = np.zeros((nrows, ncols), dtype=int)
 
     sta_labels = cfg.station_names[:]
-    for comb in cfg.combinations:
-        sta_labels.append(comb)
+    for key in all_atts_dict.keys():
+        if key not in cfg.station_names:
+            sta_labels.append(key)
 
     att_names = []
     for sta in cfg.station_names:
@@ -126,12 +127,8 @@ def run_explore_data(args):
             plt.title("%s - Radviz plot" % sta)
             plt.savefig(os.path.join(cfg.figdir, "%s_radviz.png" % sta))
 
-    # add combinations of attributes to all_sta dict
-    for sta in cfg.combinations:
-        all_atts[sta] = att_dict[sta]
-
     if cfg.do_att_matrix:
-        matrix, row_names, col_names = make_att_matrix(all_atts, cfg)
+        matrix, row_names, col_names = make_att_matrix(att_dict, cfg)
         gr.plot_att_matrix(matrix, row_names, col_names, cfg.figdir)
 
 if __name__ == '__main__':
