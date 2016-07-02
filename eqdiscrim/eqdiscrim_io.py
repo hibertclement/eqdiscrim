@@ -369,14 +369,8 @@ def get_catalog_entry(catalog_df, index):
 
 def read_and_cat_dataframes(fnames):
 
-    for fname in fnames:
-        X_df = load(fname)
-        if fname == fnames[0]:
-            X_df_full = X_df
-        else:
-            X_df_full = X_df_full.append(X_df, ignore_index=False)
-
-    return X_df_full
+    df_list = [load(fname) for fname in fnames]
+    return pd.concat(df_list)
 
 
 def get_station_combinations(station_names, n=None):

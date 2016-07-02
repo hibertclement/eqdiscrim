@@ -4,6 +4,7 @@ import os
 import socket
 import tempfile
 import numpy as np
+import pandas as pd
 import synthetics as syn
 import eqdiscrim_io as io
 from obspy import UTCDateTime
@@ -97,6 +98,7 @@ def cm_dict(request):
     return {'cm' : cm, 'labels' : labels, 'score_mean' : score_mean,
             'score_2stdev' : score_2stdev}
 
+
 @pytest.fixture()
 def tmp_file(request):
     f_, fname = tempfile.mkstemp()
@@ -105,6 +107,29 @@ def tmp_file(request):
     request.addfinalizer(fin)
     return fname
 
+
+@pytest.fixture()
+def syn_att_df(request):
+    
+    n_atts = 4
+    n_evtypes = n_atts
+    n_samples = 500
+
+    att_names = ['att_%d' % i for i in xrange(n_atts)]
+
+    evtypes = pd.Series(['evtype_%d' % i for i in xrange(n_evtypes)])
+    
+    series = {}
+    series['EVENT_TYPE'] = evtypes
+    for att in att_names:
+        series[att] = pd.Series([i == att_names.index(att) for i in
+                                 xrange(n_evtypes)])
+
+    df = pd.DataFrame(series)
+    df_samp = df.sample(n_samples, replace=True)
+
+    return df_samp
+    
     
 def test_pickle_io(cm_dict, tmp_file):
 
@@ -113,6 +138,28 @@ def test_pickle_io(cm_dict, tmp_file):
 
     for key in cm_dict.keys():
         assert key in cm_dict1.keys()
+
+
+def test_syn_att_creation(syn_att_df):
+
+    assert len(syn_att_df) == 500
+    assert len(syn_att_df.columns.values) == 5
+
+
+def test_cat_att_files(syn_att_df, tmp_file):
+
+    # get a second filename
+    tmp_file2 = '%s_2' % tmp_file
+
+    # make two files
+    io.dump(syn_att_df, tmp_file)
+    io.dump(syn_att_df, tmp_file2)
+    
+    X_df = io.read_and_cat_dataframes([tmp_file, tmp_file2])
+
+    os.unlink(tmp_file2)
+
+    assert len(X_df) == 2 * len(syn_att_df)
 
 
 if __name__ == '__main__':
