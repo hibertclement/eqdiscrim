@@ -40,6 +40,17 @@ def make_att_matrix(all_atts_dict, cfg):
     return matrix, sta_labels, att_names
 
 
+def plot_cm(cfg, sta):
+    print "Plotting CM matrix"
+    cm_dict = io.load(os.path.join(cfg.clfdir, 'cm_norm_%s.dat' % sta))
+    gr.plot_confusion_matrix(cm_dict['cm_norm'], cm_dict['labels'],
+                             '%s : %.2f (+/-) %.2f' % (sta, 
+                              cm_dict['score_mean'] * 100,
+                              cm_dict['score_2sigma'] * 100),
+                              os.path.join(cfg.figdir,
+                                           'cm_norm_%s.png' % sta))
+
+
 def run_explore_data(args):
 
     cfg = io.Config(args.config_file)
@@ -109,7 +120,6 @@ def run_explore_data(args):
             X_r2 = lda.fit(X, y).transform(X)
             gr.plot_lda(X_r2, y, lda.classes_, cfg.color_list, cfg.figdir, sta)
 
-
         # time plots
         if cfg.do_timeplots:
             print "Plotting timeseries plots for %d classes and %d attributes" %\
@@ -127,9 +137,21 @@ def run_explore_data(args):
             plt.title("%s - Radviz plot" % sta)
             plt.savefig(os.path.join(cfg.figdir, "%s_radviz.png" % sta))
 
+        # doing cm plots
+        if cfg.do_cm_plots:
+            plot_cm(cfg, sta)
+
     if cfg.do_att_matrix:
         matrix, row_names, col_names = make_att_matrix(att_dict, cfg)
         gr.plot_att_matrix(matrix, row_names, col_names, cfg.figdir)
+
+    # do combination plots
+    for comb in cfg.combinations:
+
+        print "Treating combination %s" % comb
+
+        if cfg.do_cm_plots:
+            plot_cm(cfg, comb)
 
 if __name__ == '__main__':
 

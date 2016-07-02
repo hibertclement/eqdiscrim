@@ -86,6 +86,7 @@ class Config(object):
         self.do_lda_plots = config.getboolean('Figures', 'do_lda_plots')
         self.do_timeplots = config.getboolean('Figures', 'do_timeplots')
         self.do_radviz = config.getboolean('Figures', 'do_radviz')
+        self.do_cm_plots = config.getboolean('Figures', 'do_cm_plots')
 
         self.color_list = self.parse_list_(config.get('Figures',
                                                          'color_list'))
@@ -394,3 +395,17 @@ def get_station_combinations(station_names, n=None):
             comb_list.append(comb)
 
     return comb_list
+
+
+def dump(an_object, a_filename):
+
+    with open(a_filename, 'wb') as f_:
+        pickle.dump(an_object, f_)
+
+
+def load(a_filename):
+
+    with open(a_filename, 'rb') as f_:
+        an_object = pickle.load(f_)
+
+    return an_object

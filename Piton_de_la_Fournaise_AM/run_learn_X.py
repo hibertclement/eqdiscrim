@@ -1,4 +1,3 @@
-import pickle
 import os
 import glob
 import string
@@ -108,14 +107,17 @@ def run_classification(cfg, X_df, sta, cross_valid=False, output_info=False):
 
 
     if output_info:
-        print('\nConfusion matrix')
+        print('\nConfusion matrix for %s' % sta)
         cm = confusion_matrix(y_test, y_pred)
         cm_norm = cm.astype('float') / cm.sum(axis=1)[:, np.newaxis]
         print cm
-        gr.plot_confusion_matrix(cm_norm, labels, '%s : %.2f (+/-) %.2f'
-                                 % (sta, score_mean * 100, score_2std * 100),
-                                 os.path.join(cfg.figdir,
-                                              'cm_norm_%s.png' % sta))
+        cm_fname = os.path.join(cfg.clfdir, 'cm_norm_%s.dat' % sta)
+        io.dump({'cm_norm' : cm_norm, 'labels' : labels, 'score_mean' :
+                score_mean, 'score_2sigma' : score_2std}, cm_fname)
+        # gr.plot_confusion_matrix(cm_norm, labels, '%s : %.2f (+/-) %.2f'
+        #                         % (sta, score_mean * 100, score_2std * 100),
+        #                         os.path.join(cfg.figdir,
+        #                                      'cm_norm_%s.png' % sta))
 
     return clf_fitted, atts, score_mean
 
@@ -202,11 +204,15 @@ def run_learn(args):
         clf, atts, score = run_classification(cfg, X_df, sta, cross_valid=True,
                                               output_info=cfg.output_info)
 
+        # write classifier
         clf_fname = os.path.join(cfg.clfdir, 'clf_%s.dat' % sta)
-        with open(clf_fname, 'w') as f_:
-            pickle.dump(clf, f_)
+        io.dump(clf, clf_fname)
+
+        # append to classifier score files
         with open(cfg.scores_fname, 'a') as f_:
             f_.write("%s %.2f\n" % (sta, score))
+
+        # add attributes to dictionary of best attributes
         sta_best_atts[sta] = X_df.columns.values[5:]
 
     # ------------------------
@@ -240,20 +246,22 @@ def run_learn(args):
         clf, atts, score = run_classification(cfg, X_df, sta, cross_valid=True,
                                               output_info=cfg.output_info)
 
-        # save best attributes and classifier and score
-        sta_best_atts[sta] = X_df.columns.values[5:]
+        # write classifier
         clf_fname = os.path.join(cfg.clfdir, 'clf_%s.dat' % sta)
-        with open(clf_fname, 'w') as f_:
-            pickle.dump(clf, f_)
+        io.dump(clf, clf_fname)
+
+        # append to classifier score files
         with open(cfg.scores_fname, 'a') as f_:
             f_.write("%s %.2f\n" % (sta, score))
+
+        # add attributes to dictionary of best attributes
+        sta_best_atts[sta] = X_df.columns.values[5:]
 
     # ------------------------
     # ensure permanence
     # ------------------------
     # attributes
-    with open(cfg.best_atts_fname, 'w') as f_:
-        pickle.dump(sta_best_atts, f_)
+    io.dump(sta_best_atts, cfg.best_atts_fname)
 
     # scores
 

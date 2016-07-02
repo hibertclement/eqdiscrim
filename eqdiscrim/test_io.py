@@ -1,6 +1,8 @@
 import unittest
+import pytest
 import os
 import socket
+import tempfile
 import numpy as np
 import synthetics as syn
 import eqdiscrim_io as io
@@ -82,6 +84,40 @@ class SimpleTests(unittest.TestCase):
         comb_list = io.get_station_combinations(stations)
         self.assertEqual(len(comb_list), 4)
 
+
+@pytest.fixture()
+def cm_dict(request):
+    cm = np.diag([1, 1, 0.3, 1, 1])
+    cm [3, 1] = 0.7
+
+    labels = ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h']
+    score_mean = 0.95
+    score_2stdev  = 0.05
+
+    return {'cm' : cm, 'labels' : labels, 'score_mean' : score_mean,
+            'score_2stdev' : score_2stdev}
+
+@pytest.fixture()
+def tmp_file(request):
+    f_, fname = tempfile.mkstemp()
+    def fin():
+        os.unlink(fname)
+    request.addfinalizer(fin)
+    return fname
+
+    
+def test_pickle_io(cm_dict, tmp_file):
+
+    io.dump(cm_dict, tmp_file)
+    cm_dict1 = io.load(tmp_file)
+
+    for key in cm_dict.keys():
+        assert key in cm_dict1.keys()
+
+
+
 if __name__ == '__main__':
 
     unittest.TextTestRunner(verbosity=2).run(suite())
+
+
