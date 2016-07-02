@@ -370,9 +370,8 @@ def get_catalog_entry(catalog_df, index):
 def read_and_cat_dataframes(fnames):
 
     for fname in fnames:
-        with open(fname, 'r') as f_:
-            X_df = pickle.load(f_)
-        if fname is fnames[0]:
+        X_df = load(fname)
+        if fname == fnames[0]:
             X_df_full = X_df
         else:
             X_df_full = X_df_full.append(X_df, ignore_index=False)

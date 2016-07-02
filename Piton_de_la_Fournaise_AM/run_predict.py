@@ -1,4 +1,3 @@
-import pickle
 import glob
 import argparse
 import pandas as pd
@@ -38,9 +37,8 @@ def get_clf_dict_from_combinations(combinations, clfdir):
     clf_dict = {}
     for key in combinations:
         fname = os.path.join(clfdir, 'clf_%s.dat' % key)
-        with open(fname, 'r') as f_:
-            clf = pickle.load(f_)
-            clf_dict[key] = clf
+        clf = io.load(fname)
+        clf_dict[key] = clf
 
     return clf_dict
 
@@ -155,8 +153,7 @@ def run_predict(args):
     clf = clf_dict[clf_key]
 
     # read best attributes file and get the best attributes
-    with open(cfg.best_atts_fname, 'r') as f_:
-        best_atts = pickle.load(f_)
+    best_atts = io.load(cfg.best_atts_fname)
     best_atts_clf = best_atts[clf_key]
 
     t4 = time.time()

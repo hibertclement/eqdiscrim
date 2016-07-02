@@ -2,7 +2,6 @@ import eqdiscrim_io as io
 import attributes as att
 import pandas as pd
 import numpy as np
-import pickle
 import argparse
 import os
 from obspy import read_inventory, read
@@ -139,8 +138,7 @@ def calc_and_write_attributes(cfg, inv, df_samp, ev_type, staname, att_dir,
                                            indexes[i_start:i_start + n_max],
                                            'OVPF')
             # save resulting data-frame to file
-            with open(df_X_fname, 'w') as f_:
-                pickle.dump(df_X, f_)
+            io.dump(df_X, df_X_fname)
             print "Wrote %s" % df_X_fname
         else:
             # file exists - do nothing
@@ -171,13 +169,11 @@ def run_attributes(args):
         # read the dump file
         print("\nReading OVPF catalog and writing dataframe")
         catalog_df = io.read_MC3_dump_file(cfg.catalog_fname)
-        with open(cfg.catalog_df_fname, 'w') as f_:
-            pickle.dump(catalog_df, f_)
+        io.dump(catalog_df, cfg.catalog_df_fname)
     else:
         # read the full dataframe file
         print("\nReading OVPF catalog dataframe")
-        with open(cfg.catalog_df_fname, 'r') as f_:
-            catalog_df = pickle.load(f_)
+        io.load(cfg.catalog_df_fname)
     print "Full catalog :"
     print catalog_df['EVENT_TYPE'].value_counts()
 
@@ -198,13 +194,11 @@ def run_attributes(args):
             event_df_list.append(df_samp)
         # ensure permanence of samples by writing to file
         sampled_df = pd.concat(event_df_list)
-        with open(cfg.catalog_df_samp_fname, 'w') as f_:
-            pickle.dump(sampled_df, f_)
+        io.dump(sampled_df, cfg.catalog_df_samp_fname)
     else:
         # read the sampled database
         print("\nReading the sampled dataframe")
-        with open(cfg.catalog_df_samp_fname, 'r') as f_:
-            sampled_df = pickle.load(f_)
+        sampled_df = io.load(cfg.catalog_df_samp_fname)
     print "Sampled catalog :"
     print sampled_df['EVENT_TYPE'].value_counts()
 

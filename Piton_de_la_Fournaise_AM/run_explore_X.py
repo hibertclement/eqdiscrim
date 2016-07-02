@@ -1,4 +1,3 @@
-import pickle
 import os
 import glob
 import argparse
@@ -79,9 +78,8 @@ def run_explore_data(args):
 
         # if have best_atts, then use them
         if os.path.exists(cfg.best_atts_fname):
-            with open(cfg.best_atts_fname, 'r') as f_:
-                att_dict = pickle.load(f_)
-                all_atts[sta] = att_dict[sta]
+            att_dict = io.load(cfg.best_atts_fname)
+            all_atts[sta] = att_dict[sta]
         else:
             all_atts[sta] = X_df_full.columns[5:]
 

@@ -115,7 +115,6 @@ def test_pickle_io(cm_dict, tmp_file):
         assert key in cm_dict1.keys()
 
 
-
 if __name__ == '__main__':
 
     unittest.TextTestRunner(verbosity=2).run(suite())
