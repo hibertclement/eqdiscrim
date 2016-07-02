@@ -87,7 +87,6 @@ class Config(object):
         self.do_timeplots = config.getboolean('Figures', 'do_timeplots')
         self.do_radviz = config.getboolean('Figures', 'do_radviz')
         self.do_cm_plots = config.getboolean('Figures', 'do_cm_plots')
-
         self.color_list = self.parse_list_(config.get('Figures',
                                                          'color_list'))
 
@@ -123,10 +122,8 @@ def get_RESIF_info(request, filename):
     urllib.urlretrieve(request, filename)
 
 
-def get_OVPF_MC3_dump_file(s_time, e_time, filename, evtype=None):
-
-    username = "ferraz"
-    password = "inizzarref"
+def get_OVPF_MC3_dump_file(s_time, e_time, filename, username, password,
+                           evtype=None):
 
     starttime = s_time
     endtime = starttime + 3600

@@ -52,7 +52,8 @@ class SimpleTests(unittest.TestCase):
         self.assertEqual(max(st1[0].data), max(st2[0].data))
 
 
-    @unittest.skipUnless(hostname.startswith('pitonpapangue'), 'requires pitonpapangue')
+    @unittest.skipUnless(hostname.startswith('pitonpapangue'),
+                         'requires pitonpapangue')
     def test_OVPF_dump(self):
 
         starttime = UTCDateTime(2016, 1, 1, 0, 0, 0)
@@ -60,7 +61,8 @@ class SimpleTests(unittest.TestCase):
 
         fname = "test_mc3.csv"
 
-        thepage = io.get_OVPF_MC3_dump_file(starttime, endtime, fname)
+        thepage = io.get_OVPF_MC3_dump_file(starttime, endtime, fname,
+                                            username, password)
         os.unlink(fname)
         
         self.assertEqual(len(thepage), 36374)
