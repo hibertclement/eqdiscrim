@@ -269,6 +269,17 @@ def read_MC3_dump_file(filename):
     return data_frame
 
 
+def read_sihex_xls(filename, inout=True):
+
+    data_frame = pd.read_excel(filename, sheetname=0)
+
+    if inout:
+        data_frame_out = pd.read_excel(filename, sheetname=1)
+        data_frame = data_frame.append(data_frame_out)
+
+    return data_frame
+
+
 def get_webservice_data(net, sta, cha, starttime, endtime):
     url = 'http://eida.ipgp.fr/fdsnws/dataselect/1/query?'
     url = url + 'network=%s' % net

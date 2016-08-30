@@ -16,6 +16,7 @@ def suite():
     suite.addTest(SimpleTests('test_OVPF_dump'))
     suite.addTest(SimpleTests('test_read_OVPF_dump'))
     suite.addTest(SimpleTests('test_combinations'))
+    suite.addTest(SiHexTests('test_xls_read'))
 
     return suite
     
@@ -81,6 +82,14 @@ class SimpleTests(unittest.TestCase):
 
         comb_list = io.get_station_combinations(stations)
         self.assertEqual(len(comb_list), 4)
+
+class SiHexTests(unittest.TestCase):
+
+    def test_xls_read(self):
+        fname = '../static_catalogs/SIHEXV2-inout-final.xlsx'
+        df = io.read_sihex_xls(fname)
+
+        print df
 
 if __name__ == '__main__':
 
