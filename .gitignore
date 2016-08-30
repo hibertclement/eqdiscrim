@@ -76,6 +76,7 @@ synthetic_data/
 *.m~
 static_catalogs/sihex_tidy_Kevin.xlsx
 *.xml
-*.txt
+#*.txt
 Data/
 nohup.out
+eqdiscrim/PF_stations.txt
