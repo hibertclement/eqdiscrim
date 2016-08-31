@@ -92,10 +92,26 @@ def clean_sihex_data(df):
     # this next event is rather too deep
     df.drop(159405, inplace=True)
     
-    # TODO
-    # remove events that are out of SiHex boundaries
     return df
 
+def mask_to_sihex_boundaries(catalog_dir, df):
+
+    # read the shape file
+    sh_names = list(["LON", "LAT"])
+    sh_tmp = pd.read_table(os.path.join(catalog_dir, sihex_bound), sep='\s+', header=None, names=sh_names)
+    sh = sh_tmp[sh_names].values
+    sh_tup = zip(sh[:, 0], sh[:, 1])
+    poly = Polygon(sh_tup)
+
+    # add column to data frame
+    df['IN_SIHEX'] = df.apply(check_boundary, axis=1, args=[poly])
+
+    return df
+
+def check_boundary(row, poly):
+
+    point = Point(row['LAT'], row['LON'])
+    return point.within(poly)
 
 def read_sihex_xls(filename, inout=True):
 

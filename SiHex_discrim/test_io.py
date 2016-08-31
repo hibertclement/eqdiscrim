@@ -2,6 +2,7 @@ import unittest
 import numpy as np
 from shapely.geometry import Point, Polygon
 from cat_io.sihex_io import read_sihex_xls, read_notecto_lst, read_all_sihex_files
+from cat_io.sihex_io import mask_to_sihex_boundaries
 from cat_io.renass_io import read_renass, read_stations_fr
 from datetime import datetime, timedelta
 from dateutil import tz
@@ -99,6 +100,11 @@ def test_read_sihex():
 
     assert nlines == 300
     assert ncol == 7
+
+def test_mask_sihex():
+
+    df = read_all_sihex_files('test_data')
+    df = mask_to_sihex_boundaries('test_data', df)
 
 
 if __name__ == '__main__':
