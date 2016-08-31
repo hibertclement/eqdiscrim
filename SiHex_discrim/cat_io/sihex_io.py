@@ -16,10 +16,23 @@ sihex_txt = 'SIHEXV2-catalogue-final.txt'
 notecto_lst = 'no_tecto.lst'
 sihex_bound = 'line20km.xy.txt'
 
+def construct_otime(row):
+
+    date = row['DATE']
+    time_parts = row['HEURE'].split(':')
+    hour = np.int(time_parts[0])
+    minute = np.int(time_parts[1])
+    seconds = np.int(np.floor(np.float(time_parts[2])))
+    microseconds = np.int((np.float(time_parts[2]) - seconds) * 1e6)
+
+    return datetime(date.year, date.month, date.day, hour, minute, seconds,
+                    microseconds, utc)
+
 
 def read_all_sihex_files(catalog_dir):
 
     # read excel file
+    print "Reading excel file"
     df_in = pd.read_excel(os.path.join(catalog_dir, sihex_xls), sheetname=0)
     df_in['TYPE'] = 'ke'
     df_in.drop('IN/OUT', axis=1, inplace=True)
@@ -31,39 +44,21 @@ def read_all_sihex_files(catalog_dir):
     df_out['DATE'] = pd.to_datetime(df_out['DATE'])
 
     # read notecto file
+    print "Reading notecto file"
     names = list(["ID", "DATE", "HEURE", "LAT", "LON", "PROF", "AUTEUR",
                   "TYPE", "Mw"])
     df_notecto = pd.read_table(os.path.join(catalog_dir, notecto_lst),
                                sep='\s+', header=None, names=names)
     df_notecto['DATE'] = pd.to_datetime(df_notecto['DATE'])
 
-    # concatenate
+    # concatenate all three catalogs
+    print "Concatenating"
     df_sihex = pd.concat((df_in, df_out, df_notecto))
     df_sihex.set_index('ID', inplace=True)
 
-    # deal with datetimes
-    DT_names = list(["DATE", "HEURE"])
-    DT = df_sihex[DT_names].values
-
-    # date-time parsing into a single otime object
-    nev, nd = DT.shape
-    otime = np.empty(nev, dtype=object)
-    for i in xrange(nev):
-        # Date is encoded as a pandas imestamp
-        year = DT[i, 0].year
-        month = DT[i, 0].month
-        day = DT[i, 0].day
-        # time is encoded as a string
-        time_parts = DT[i, 1].split(':')
-        hour = np.int(time_parts[0])
-        minute = np.int(time_parts[1])
-        seconds = np.int(np.floor(np.float(time_parts[2])))
-        microseconds = np.int((np.float(time_parts[2]) - seconds) * 1e6)
-        # make a datetime object by merging date and time
-        otime[i] = datetime(year, month, day, hour, minute, seconds,
-                            microseconds, utc)
-
-    df_sihex['OTIME'] = otime
+    # sort out the origin times
+    print "Dealing with origin times"
+    df_sihex['OTIME'] = df_sihex.apply(construct_otime, axis=1)
     df_sihex.drop('DATE', axis=1, inplace=True)
     df_sihex.drop('HEURE', axis=1, inplace=True)
 
@@ -71,6 +66,7 @@ def read_all_sihex_files(catalog_dir):
 
 def clean_sihex_data(df):
 
+    print "Cleaning bad sihex indexes"
     # These events are in the OUT part and are too far from France
     df.drop(255001, inplace=True)
     df.drop(180307, inplace=True)
@@ -96,13 +92,16 @@ def clean_sihex_data(df):
 
 def mask_to_sihex_boundaries(catalog_dir, df):
 
+    print "Reading boundary file"
     # read the shape file
     sh_names = list(["LON", "LAT"])
-    sh_tmp = pd.read_table(os.path.join(catalog_dir, sihex_bound), sep='\s+', header=None, names=sh_names)
+    sh_tmp = pd.read_table(os.path.join(catalog_dir, sihex_bound), sep='\s+',
+                           header=None, names=sh_names)
     sh = sh_tmp[sh_names].values
     sh_tup = zip(sh[:, 0], sh[:, 1])
     poly = Polygon(sh_tup)
 
+    print "Masking to boundary"
     # add column to data frame
     df['IN_SIHEX'] = df.apply(check_boundary, axis=1, args=[poly])
 
@@ -110,7 +109,7 @@ def mask_to_sihex_boundaries(catalog_dir, df):
 
 def check_boundary(row, poly):
 
-    point = Point(row['LAT'], row['LON'])
+    point = Point(row['LON'], row['LAT'])
     return point.within(poly)
 
 def read_sihex_xls(filename, inout=True):
