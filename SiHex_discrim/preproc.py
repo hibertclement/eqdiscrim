@@ -1,8 +1,67 @@
 import numpy as np
 from pyproj import Proj
+from cat_io.renass_io import read_stations_fr_dataframe
 
 
 p = Proj(proj='utm', zone=31, ellps='WGS84')
+
+def latlon_to_xy_dataframe(df):
+
+    try:
+        lat = df['LAT'].values
+        lon = df['LON'].values
+    except KeyError:
+        try:
+            lat = df['LATITUDE'].values
+            lon = df['LONGITUDE'].values
+        except:
+            raise
+        
+    x, y = p(lon, lat)
+
+    df['X'] = x
+    df['Y'] = y
+
+    return df
+
+def add_distance_to_closest_stations(ev_df, n_close):
+
+    print "Getting distance to 3 closest statoins"
+    # read station file
+    s_df = read_stations_fr_dataframe()
+
+    # convert both dataframes to XY
+    ev_df = latlon_to_xy_dataframe(ev_df)
+    s_df = latlon_to_xy_dataframe(s_df)
+
+    # get distance to n_close closest stations and add to dataframe
+    ev_df['DIST'] = ev_df.apply(dist_to_closest_stations, axis=1, args=[s_df, n_close])
+
+    print ev_df.head()
+    
+    return ev_df
+
+
+def euclid_dist(x1, y1, x2, y2):
+
+    return np.sqrt((x1-x2)**2 + (y1-y2)**2)
+
+
+def dist_to_closest_stations(row, sta_df, n_close):
+
+    rec_sta_df = sta_df[(row['OTIME'] > sta_df['STIME']) & (row['OTIME'] < sta_df['ETIME'])]
+
+    x_sta = rec_sta_df['X'].values
+    y_sta = rec_sta_df['Y'].values
+
+    dist = euclid_dist(x_sta, y_sta, row['X'], row['Y'])
+    dist.sort()
+
+    try:
+        return np.sum(dist[0 : n_close])
+    except IndexError:
+        return np.NaN
+    
 
 
 def latlon_to_xy(X, names, ilat, ilon):

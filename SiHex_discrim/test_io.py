@@ -1,9 +1,10 @@
-import unittest
+import unittest, pytest
 import numpy as np
 from shapely.geometry import Point, Polygon
 from cat_io.sihex_io import read_sihex_xls, read_notecto_lst, read_all_sihex_files
 from cat_io.sihex_io import mask_to_sihex_boundaries
-from cat_io.renass_io import read_renass, read_stations_fr
+from cat_io.renass_io import read_renass, read_stations_fr, read_stations_fr_dataframe
+from preproc import add_distance_to_closest_stations
 from datetime import datetime, timedelta
 from dateutil import tz
 
@@ -92,20 +93,44 @@ class IoReadTests(unittest.TestCase):
 
 # tests for new sihex
 
-def test_read_sihex():
-    
-    df = read_all_sihex_files('test_data')
+@pytest.fixture()
+def sihex_df(request):
+    return read_all_sihex_files('test_data')
 
-    nlines, ncol = df.shape
+def test_read_sihex(sihex_df):
+    
+    nlines, ncol = sihex_df.shape
 
     assert nlines == 300
     assert ncol == 7
 
-def test_mask_sihex():
+def test_mask_sihex(sihex_df):
 
-    df = read_all_sihex_files('test_data')
-    df = mask_to_sihex_boundaries('test_data', df)
+    df = mask_to_sihex_boundaries('test_data', sihex_df)
 
+def test_read_stations():
+
+    old_sta, sta_names = read_stations_fr()
+    sta_df = read_stations_fr_dataframe()
+
+    nsta_old, natt_old = old_sta.shape
+    assert nsta_old == 306 
+    assert natt_old == 6
+
+    nsta_new, natt_new = sta_df.shape
+    assert nsta_old == nsta_new
+    assert natt_old == natt_new
+
+def test_distance_closest_stations(sihex_df):
+    
+    nr_orig, nc_orig = sihex_df.shape
+
+    df = add_distance_to_closest_stations(sihex_df, 3)
+    nr, nc = df.shape
+
+    assert nr == nr_orig
+    assert nc == nc_orig + 3
+    
 
 if __name__ == '__main__':
 
