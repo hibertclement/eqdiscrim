@@ -1,9 +1,10 @@
 import pandas as pd
 import numpy as np
+import pytz
 from datetime import datetime
 from dateutil import tz
 
-utc = tz.gettz('UTC')
+utc = pytz.utc
 
 
 # files to be read (static for now - ugly but efficient)
@@ -12,7 +13,7 @@ stations_csv = '../static_catalogs/stations_fr.csv'
 
 def construct_otime(row):
     date = row['OTIME']
-    return datetime.strptime(date, "%Y-%m-%dT%H:%M:%S.%f")
+    return utc.localize(datetime.strptime(date, "%Y-%m-%dT%H:%M:%S.%f"))
 
 def read_BCSF_RENASS_cat(fname):
     names = list(["ID", "OTIME", "LAT", "LON", "PROF", "AUTEUR", "TYPE", "Mw"])

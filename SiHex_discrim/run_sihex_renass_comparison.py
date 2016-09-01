@@ -1,7 +1,9 @@
 import os
+import numpy as np
 import cat_io.sihex_io as io
 import cat_io.renass_io as ior
 import matplotlib.pyplot as plt
+from mpl_toolkits.basemap import Basemap
 
 from pickle import load, dump
 from sklearn import cluster
@@ -37,6 +39,7 @@ else:
     df.drop('IN_SIHEX', axis=1, inplace=True)
     # add distance to closest stations
     df_sihex = preproc.add_distance_to_closest_stations(df, 3)
+    df_sihex = preproc.extract_local_hour_weekday(df_sihex)
 
     # dump to file
     with open(os.path.join(catalog_dir, tidy_file_sihex), 'wb') as f_:
@@ -55,10 +58,12 @@ else:
     df.drop('IN_SIHEX', axis=1, inplace=True)
     # add distance to closest stations
     df_bcsf = preproc.add_distance_to_closest_stations(df, 3)
+    df_bcsf = preproc.extract_local_hour_weekday(df_bcsf)
 
     with open(os.path.join(catalog_dir, tidy_file_bcsf), 'wb') as f_:
         dump(df_bcsf, f_)
     
+
 
 # print df['TYPE'].value_counts()
 # print df.head()
@@ -88,21 +93,187 @@ Xdist = df_bcsf['DIST'].values
 Xdist = Xdist.reshape(-1, 1)
 df_bcsf['CLUST'] = clf.predict(Xdist)
 
-# plotting
-plt.figure()
-df_0 = df_sihex[df_sihex['CLUST']==0]
-df_1 = df_sihex[df_sihex['CLUST']==1]
-df_2 = df_sihex[df_sihex['CLUST']==2]
-plt.scatter(df_2['LON'], df_2['LAT'], color='blue', label='2')
-plt.scatter(df_1['LON'], df_1['LAT'], color='green', label='1')
-plt.scatter(df_0['LON'], df_0['LAT'], color='red', label='0')
-plt.savefig('sihex_scatter.png')
+# extract local hour and weekday
+# print "Extracting local hour and weekday"
+# df_sihex = preproc.extract_local_hour_weekday(df_sihex)
+# df_bcsf = preproc.extract_local_hour_weekday(df_bcsf)
 
-plt.figure()
-df_0 = df_bcsf[df_bcsf['CLUST']==0]
-df_1 = df_bcsf[df_bcsf['CLUST']==1]
-df_2 = df_bcsf[df_bcsf['CLUST']==2]
-plt.scatter(df_2['LON'], df_2['LAT'], color='blue', label='2')
-plt.scatter(df_1['LON'], df_1['LAT'], color='green', label='1')
-plt.scatter(df_0['LON'], df_0['LAT'], color='red', label='0')
-plt.savefig('bcsf_scatter.png')
+def split_by_clusters(df):
+    df_0 = df[df['CLUST']==0]
+    df_1 = df[df['CLUST']==1]
+    df_2 = df[df['CLUST']==2]
+
+    return df_0, df_1, df_2
+
+def plot_clusters_geo(df, title, fname):
+
+    # setup mercator map projection.
+
+    m = Basemap(llcrnrlon=-10., llcrnrlat=38., urcrnrlon=15., urcrnrlat=54.,
+                resolution='i', projection='tmerc', lat_0 = 47., lon_0 = 1.)
+    
+    plt.figure()
+    df_0, df_1, df_2 = split_by_clusters(df)
+    x2, y2 = m(df_2['LON'].values, df_2['LAT'].values)
+    x1, y1 = m(df_1['LON'].values, df_1['LAT'].values)
+    x0, y0 = m(df_0['LON'].values, df_0['LAT'].values)
+    m.scatter(x2, y2, color='blue')
+    m.scatter(x1, y1, color='green')
+    m.scatter(x0, y0, color='red')
+    m.drawcoastlines()
+    plt.title(title)
+    plt.savefig(fname)
+
+def plot_Mw_histograms(df, title, fname):
+
+    plt.figure()
+    fig, axes = plt.subplots(2, 1)
+    fig.set_size_inches(6, 10)
+
+    plt.sca(axes[0])
+    n, bins, patches = plt.hist(df['Mw'].values, 10, normed=1, histtype='step',
+                                color='black')
+    plt.title(title)
+    plt.ylabel('Probabillity density')
+
+
+    plt.sca(axes[1])
+    df_0, df_1, df_2 = split_by_clusters(df)
+    n, bins, patches = plt.hist(df_0['Mw'].values, 10, normed=1,
+                                histtype='step', color='red')
+    n, bins, patches = plt.hist(df_1['Mw'].values, 10, normed=1,
+                                histtype='step', color='green')
+    n, bins, patches = plt.hist(df_2['Mw'].values, 10, normed=1,
+                                histtype='step', color='blue')
+    plt.xlabel('Magnitude Mw')
+    plt.ylabel('Probabillity density')
+    plt.savefig(fname)
+
+def plot_GR(df, title, fname):
+
+    plt.figure()
+
+    fig, axes = plt.subplots(2, 1)
+    fig.set_size_inches(6, 10)
+
+    plt.sca(axes[0])
+
+    log10N, mags = preproc.GutenbergRichter(df['Mw'].values, 0.0, 6.0, 0.2)
+    plt.scatter(mags[0:-1], log10N, color='black')
+    plt.ylabel('log10N')
+    plt.xlabel('Magnitude Mw')
+
+    plt.title(title)
+
+    plt.sca(axes[1])
+    df_0, df_1, df_2 = split_by_clusters(df)
+    log10N, mags = preproc.GutenbergRichter(df_0['Mw'].values, 0.0, 6.0, 0.2)
+    plt.scatter(mags[0:-1], log10N, color='red')
+    log10N, mags = preproc.GutenbergRichter(df_1['Mw'].values, 0.0, 6.0, 0.2)
+    plt.scatter(mags[0:-1], log10N, color='green')
+    log10N, mags = preproc.GutenbergRichter(df_2['Mw'].values, 0.0, 6.0, 0.2)
+    plt.scatter(mags[0:-1], log10N, color='blue')
+
+    plt.ylabel('log10N')
+    plt.xlabel('Magnitude Mw')
+
+    plt.savefig(fname)
+
+def plot_localtime_histograms(df, title, fname):
+
+    plt.figure()
+    bins = np.arange(25) - 0.5
+    
+
+    fig, axes = plt.subplots(2, 1)
+    fig.set_size_inches(6, 10)
+
+    plt.sca(axes[0])
+
+    plt.hist(df['LOCAL_HOUR'].values, bins=bins, normed=1, histtype='step',
+             color='black')
+    plt.plot([-1, 25], [1/24., 1/24.], lw=2, color='black')
+    plt.xlabel('Local hour')
+    plt.ylabel('Probability density')
+    plt.xlim(-1, 25)
+    plt.ylim(0, 0.08)
+
+    plt.title(title)
+
+    plt.sca(axes[1])
+
+    df_0, df_1, df_2 = split_by_clusters(df)
+    plt.hist(df_0['LOCAL_HOUR'].values, bins=bins, normed=1, histtype='step',
+             color='red')
+    plt.hist(df_1['LOCAL_HOUR'].values, bins=bins, normed=1, histtype='step',
+             color='green')
+    plt.hist(df_2['LOCAL_HOUR'].values, bins=bins, normed=1, histtype='step',
+             color='blue')
+    plt.plot([-1, 25], [1/24., 1/24.], lw=2, color='black')
+    plt.xlabel('Local hour')
+    plt.ylabel('Probability density')
+    plt.xlim(-1, 25)
+    plt.ylim(0, 0.08)
+  
+    plt.savefig(fname)
+
+
+def plot_weekday_histograms(df, title, fname):
+
+    plt.figure()
+    bins = np.arange(8) + 0.5
+    
+
+    fig, axes = plt.subplots(2, 1)
+    fig.set_size_inches(6, 10)
+
+    plt.sca(axes[0])
+
+    plt.hist(df['WEEKDAY'].values, bins=bins, normed=1, histtype='step',
+             color='black')
+    plt.plot([0, 8], [1/7., 1/7.], lw=2, color='black')
+    plt.xlabel('Local hour')
+    plt.ylabel('Probability density')
+    plt.xlim(0, 8)
+    plt.ylim(0, 0.2)
+
+    plt.title(title)
+
+    plt.sca(axes[1])
+
+    df_0, df_1, df_2 = split_by_clusters(df)
+    plt.hist(df_0['WEEKDAY'].values, bins=bins, normed=1, histtype='step',
+             color='red')
+    plt.hist(df_1['WEEKDAY'].values, bins=bins, normed=1, histtype='step',
+             color='green')
+    plt.hist(df_2['WEEKDAY'].values, bins=bins, normed=1, histtype='step',
+             color='blue')
+    plt.plot([-1, 8], [1/7., 1/7.], lw=2, color='black')
+    plt.xlabel('Local hour')
+    plt.ylabel('Probability density')
+    plt.xlim(0, 8)
+    plt.ylim(0, 0.2)
+  
+    plt.savefig(fname)
+
+
+#print df_sihex['TYPE'].value_counts()
+#print df_bcsf['TYPE'].value_counts()
+
+# get definite earthquakes only
+df_sihex_ke = df_sihex[df_sihex['TYPE'] == 'ke']
+df_bcsf_ke = df_bcsf[df_bcsf['TYPE'] == 'ke']
+#print df_bcsf_ke['WEEKDAY'].value_counts()
+
+print "Plotting"
+# plot_clusters_geo(df_sihex, 'SIHEX - distance to station clusters', 'sihex_cluster.png')
+# plot_clusters_geo(df_bcsf, 'BCSF - distance to station clusters', 'bcsf_cluster.png')
+
+plot_Mw_histograms(df_sihex_ke, 'SIHEX - Mw', 'sihex_Mw.png')
+plot_Mw_histograms(df_bcsf_ke, 'BCSF - Mw', 'bcsf_Mw.png')
+plot_GR(df_sihex_ke, 'GR - SiHex', 'sihex_GR.png')
+plot_GR(df_bcsf_ke, 'GR - BCSF', 'bcsf_GR.png')
+plot_localtime_histograms(df_sihex_ke, 'SiHex - ke', 'sihex_ke_localtime.png')
+plot_localtime_histograms(df_bcsf_ke, 'BCSF - ke', 'bcsf_ke_localtime.png')
+plot_weekday_histograms(df_sihex_ke, 'SiHex - ke', 'sihex_ke_weekday.png')
+plot_weekday_histograms(df_bcsf_ke, 'BCSF - ke', 'bcsf_ke_weekday.png')

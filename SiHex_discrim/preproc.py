@@ -1,9 +1,11 @@
 import numpy as np
 from pyproj import Proj
+from dateutil import tz
 from cat_io.renass_io import read_stations_fr_dataframe
 
 
 p = Proj(proj='utm', zone=31, ellps='WGS84')
+to_zone = tz.gettz('Europe/Paris')
 
 def latlon_to_xy_dataframe(df):
 
@@ -121,6 +123,23 @@ def xy_to_latlon(X, names, ix, iy):
 
     return X_new, names_new
 
+
+def get_localtime(row):
+    loctime = row['OTIME'].astimezone(to_zone)
+    loc_hour = toHourFraction(loctime)
+
+    return loc_hour
+
+def get_weekday(row):
+    weekday = row['OTIME'].isoweekday()
+    return weekday
+
+def extract_local_hour_weekday(df):
+
+    df['LOCAL_HOUR'] = df.apply(get_localtime, axis=1)
+    df['WEEKDAY'] = df.apply(get_weekday, axis=1)
+
+    return df
 
 def dist_to_n_closest_stations(X_xy, S_xy, n, timing=False):
     """
