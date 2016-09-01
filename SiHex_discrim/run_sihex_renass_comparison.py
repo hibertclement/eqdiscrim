@@ -1,14 +1,17 @@
 import os
 import numpy as np
+import preproc
 import cat_io.sihex_io as io
 import cat_io.renass_io as ior
 import matplotlib.pyplot as plt
 from mpl_toolkits.basemap import Basemap
-
 from pickle import load, dump
 from sklearn import cluster
 
-import preproc
+
+# ----------------------
+# constants
+# ----------------------
 
 catalog_dir = '../static_catalogs'
 bcsf_cat = '../static_catalogs/catalogue_BCSF_RENASS_2012_2016.txt'
@@ -20,83 +23,9 @@ read_tidy_sihex = True
 read_tidy_renass = True
 read_clust = True
 
-df_bcsf = ior.read_BCSF_RENASS_cat(bcsf_cat)
-
-if read_tidy_sihex:
-
-    print "Loading from tidy file"
-    # load from file
-    with open(os.path.join(catalog_dir, tidy_file_sihex), 'rb') as f_:
-        df_sihex = load(f_)
-else:
-
-    # Re-read the sihex files from the start
-    df_sihex = io.read_all_sihex_files(catalog_dir)
-    df_sihex = io.clean_sihex_data(df_sihex)
-    df_sihex = io.mask_to_sihex_boundaries(catalog_dir, df_sihex)
-    # keep only points within sihex boundaries
-    df = df_sihex[df_sihex['IN_SIHEX']].copy()
-    df.drop('IN_SIHEX', axis=1, inplace=True)
-    # add distance to closest stations
-    df_sihex = preproc.add_distance_to_closest_stations(df, 3)
-    df_sihex = preproc.extract_local_hour_weekday(df_sihex)
-
-    # dump to file
-    with open(os.path.join(catalog_dir, tidy_file_sihex), 'wb') as f_:
-        dump(df_sihex, f_)
-
-if read_tidy_renass:
-    print "Loading from tidy file"
-    with open(os.path.join(catalog_dir, tidy_file_bcsf), 'rb') as f_:
-        df_bcsf = load(f_)
-else:
-
-    df_bcsf = ior.read_BCSF_RENASS_cat(bcsf_cat)
-    df_bcsf = io.mask_to_sihex_boundaries(catalog_dir, df_bcsf)
-    # keep only points within sihex boundaries
-    df = df_bcsf[df_bcsf['IN_SIHEX']].copy()
-    df.drop('IN_SIHEX', axis=1, inplace=True)
-    # add distance to closest stations
-    df_bcsf = preproc.add_distance_to_closest_stations(df, 3)
-    df_bcsf = preproc.extract_local_hour_weekday(df_bcsf)
-
-    with open(os.path.join(catalog_dir, tidy_file_bcsf), 'wb') as f_:
-        dump(df_bcsf, f_)
-    
-
-
-# print df['TYPE'].value_counts()
-# print df.head()
-
-
-# do clustering
-if read_clust :
-    print "Reading cluster"
-    with open(clust_file, 'rb') as f_:
-        clf = load(f_)
-else :
-    print "Doing clustering"
-    Xdist = df_sihex['DIST'].values
-    Xdist = Xdist.reshape(-1, 1)
-    clf = cluster.KMeans(init='k-means++', n_clusters=3, random_state=42)
-    clf.fit(Xdist)
-
-    with open(clust_file, 'wb') as f_:
-        dump(clf, f_)
-
-# predict cluster label
-Xdist = df_sihex['DIST'].values
-Xdist = Xdist.reshape(-1, 1)
-df_sihex['CLUST'] = clf.predict(Xdist)
-
-Xdist = df_bcsf['DIST'].values
-Xdist = Xdist.reshape(-1, 1)
-df_bcsf['CLUST'] = clf.predict(Xdist)
-
-# extract local hour and weekday
-# print "Extracting local hour and weekday"
-# df_sihex = preproc.extract_local_hour_weekday(df_sihex)
-# df_bcsf = preproc.extract_local_hour_weekday(df_bcsf)
+# ----------------------
+# functions
+# ----------------------
 
 def split_by_clusters(df):
     df_0 = df[df['CLUST']==0]
@@ -104,6 +33,7 @@ def split_by_clusters(df):
     df_2 = df[df['CLUST']==2]
 
     return df_0, df_1, df_2
+
 
 def plot_clusters_geo(df, title, fname):
 
@@ -123,6 +53,39 @@ def plot_clusters_geo(df, title, fname):
     m.drawcoastlines()
     plt.title(title)
     plt.savefig(fname)
+
+
+def plot_types_geo(df, title, fname):
+
+    m = Basemap(llcrnrlon=-10., llcrnrlat=38., urcrnrlon=15., urcrnrlat=54.,
+                resolution='i', projection='tmerc', lat_0 = 47., lon_0 = 1.)
+
+    labels = df['TYPE'].unique()
+    colors = {'ke' : 'blue',
+              'km' : 'red',
+              'sm' : 'red',
+              'uk' : 'cyan',
+              'me' : 'magenta',
+              'ki' : 'orange',
+              'si' : 'orange',
+              'kr' : 'brown',
+              'sr' : 'brown',
+              'ls' : 'lime',
+              'fe' : 'lime',
+              '0' : 'white',
+              }
+
+    plt.figure()
+    i=0
+    for lab in labels:
+        df_lab = df[df['TYPE']==lab]
+        x, y = m(df_lab['LON'].values, df_lab['LAT'].values)
+        m.scatter(x, y, label=lab, color=colors[lab])
+    m.drawcoastlines()
+    plt.legend(loc='upper left')
+    plt.title(title)
+    plt.savefig(fname)
+
 
 def plot_Mw_histograms(df, title, fname):
 
@@ -148,6 +111,7 @@ def plot_Mw_histograms(df, title, fname):
     plt.xlabel('Magnitude Mw')
     plt.ylabel('Probabillity density')
     plt.savefig(fname)
+
 
 def plot_GR(df, title, fname):
 
@@ -178,6 +142,7 @@ def plot_GR(df, title, fname):
     plt.xlabel('Magnitude Mw')
 
     plt.savefig(fname)
+
 
 def plot_localtime_histograms(df, title, fname):
 
@@ -255,25 +220,165 @@ def plot_weekday_histograms(df, title, fname):
     plt.ylim(0, 0.2)
   
     plt.savefig(fname)
+    plt.close()
 
 
-#print df_sihex['TYPE'].value_counts()
-#print df_bcsf['TYPE'].value_counts()
+def plot_bar_stacked(df_workday, df_night_weekend, title, fname):
+
+    labels = df_workday['TYPE'].unique()
+    n = len(labels)
+    ind = np.arange(n)
+    width = 0.55
+
+    counts = df_workday['TYPE'].value_counts()
+    values1 = np.array([counts[lab] for lab in labels])
+    counts = df_night_weekend['TYPE'].value_counts()
+    values2 = np.array([counts[lab] for lab in labels])
+
+    fig, axes = plt.subplots(1, 2)
+    fig.set_size_inches(12, 5)
+    plt.sca(axes[0])
+
+    # plot values
+    p1 = plt.bar(ind, values1, width, color='blue')
+    p2 = plt.bar(ind, values2, width, color='red', bottom=values1)
+    plt.ylabel('Number of events')
+    plt.title(title)
+    plt.xticks(ind+width/2., labels)
+    plt.legend((p1[0], p2[0]), ('Workday', 'Night & weekend'))
+
+    # plot fraction
+    plt.sca(axes[1])
+    f1 = 1.0*values1/(values1+values2)
+    f2 = 1.0*values2/(values1+values2)
+    p1 = plt.bar(ind, f1, width, color='blue')
+    p2 = plt.bar(ind, f2, width, color='red', bottom=f1)
+    plt.ylabel('Fraction')
+    plt.title(title)
+    plt.xticks(ind+width/2., labels)
+    plt.axhline((5*12.0)/(7*24.), color='k', lw=2)
+
+    plt.savefig(fname)
+    plt.close()
+
+# -------------------------------
+# code starts here
+# -------------------------------
+
+if read_tidy_sihex:
+
+    print "Loading from tidy file"
+    # load from file
+    with open(os.path.join(catalog_dir, tidy_file_sihex), 'rb') as f_:
+        df_sihex = load(f_)
+else:
+
+    # Re-read the sihex files from the start
+    df_sihex = io.read_all_sihex_files(catalog_dir)
+    df_sihex = io.clean_sihex_data(df_sihex)
+    df_sihex = io.mask_to_sihex_boundaries(catalog_dir, df_sihex)
+    # keep only points within sihex boundaries
+    df = df_sihex[df_sihex['IN_SIHEX']].copy()
+    df.drop('IN_SIHEX', axis=1, inplace=True)
+    # add distance to closest stations
+    df_sihex = preproc.add_distance_to_closest_stations(df, 3)
+    df_sihex = preproc.extract_local_hour_weekday(df_sihex)
+
+    # dump to file
+    with open(os.path.join(catalog_dir, tidy_file_sihex), 'wb') as f_:
+        dump(df_sihex, f_)
+
+if read_tidy_renass:
+    print "Loading from tidy file"
+    with open(os.path.join(catalog_dir, tidy_file_bcsf), 'rb') as f_:
+        df_bcsf = load(f_)
+else:
+
+    df_bcsf = ior.read_BCSF_RENASS_cat(bcsf_cat)
+    df_bcsf = io.mask_to_sihex_boundaries(catalog_dir, df_bcsf)
+    # keep only points within sihex boundaries
+    df = df_bcsf[df_bcsf['IN_SIHEX']].copy()
+    df.drop('IN_SIHEX', axis=1, inplace=True)
+    # add distance to closest stations
+    df_bcsf = preproc.add_distance_to_closest_stations(df, 3)
+    df_bcsf = preproc.extract_local_hour_weekday(df_bcsf)
+
+    with open(os.path.join(catalog_dir, tidy_file_bcsf), 'wb') as f_:
+        dump(df_bcsf, f_)
+    
+
+# do clustering
+if read_clust :
+    print "Reading cluster"
+    with open(clust_file, 'rb') as f_:
+        clf = load(f_)
+else :
+    print "Doing clustering"
+    Xdist = df_sihex['DIST'].values
+    Xdist = Xdist.reshape(-1, 1)
+    clf = cluster.KMeans(init='k-means++', n_clusters=3, random_state=42)
+    clf.fit(Xdist)
+
+    with open(clust_file, 'wb') as f_:
+        dump(clf, f_)
+
+# predict cluster label
+Xdist = df_sihex['DIST'].values
+Xdist = Xdist.reshape(-1, 1)
+df_sihex['CLUST'] = clf.predict(Xdist)
+
+Xdist = df_bcsf['DIST'].values
+Xdist = Xdist.reshape(-1, 1)
+df_bcsf['CLUST'] = clf.predict(Xdist)
+
+
+
 
 # get definite earthquakes only
 df_sihex_ke = df_sihex[df_sihex['TYPE'] == 'ke']
 df_bcsf_ke = df_bcsf[df_bcsf['TYPE'] == 'ke']
-#print df_bcsf_ke['WEEKDAY'].value_counts()
 
+# get day / night split
+df_sihex_workday = df_sihex[(df_sihex['LOCAL_HOUR'] >= 7.0) &
+                            (df_sihex['LOCAL_HOUR'] <= 19.0) &
+                            (df_sihex['WEEKDAY'] <= 6)]
+df_sihex_night_weekend = df_sihex[(df_sihex['LOCAL_HOUR'] < 7.0) |
+                                  (df_sihex['LOCAL_HOUR'] > 19.0) |
+                                  (df_sihex['WEEKDAY'] > 6)]
+
+df_bcsf_workday = df_bcsf[(df_bcsf['LOCAL_HOUR'] >= 7.0) &
+                            (df_bcsf['LOCAL_HOUR'] <= 19.0) &
+                            (df_bcsf['WEEKDAY'] <= 6)]
+df_bcsf_night_weekend = df_bcsf[(df_bcsf['LOCAL_HOUR'] < 7.0) |
+                                  (df_bcsf['LOCAL_HOUR'] > 19.0) |
+                                  (df_bcsf['WEEKDAY'] > 6)]
+
+
+# do plotting
 print "Plotting"
-# plot_clusters_geo(df_sihex, 'SIHEX - distance to station clusters', 'sihex_cluster.png')
-# plot_clusters_geo(df_bcsf, 'BCSF - distance to station clusters', 'bcsf_cluster.png')
+plot_clusters_geo(df_sihex, 'SIHEX - distance to station clusters',
+                  'sihex_cluster.png')
+plot_clusters_geo(df_bcsf, 'BCSF - distance to station clusters',
+                  'bcsf_cluster.png')
+
+plot_types_geo(df_sihex, 'SiHex', 'sihex_types.png')
+plot_types_geo(df_bcsf, 'BCSF', 'bcsf_types.png')
 
 plot_Mw_histograms(df_sihex_ke, 'SIHEX - Mw', 'sihex_Mw.png')
 plot_Mw_histograms(df_bcsf_ke, 'BCSF - Mw', 'bcsf_Mw.png')
+
 plot_GR(df_sihex_ke, 'GR - SiHex', 'sihex_GR.png')
 plot_GR(df_bcsf_ke, 'GR - BCSF', 'bcsf_GR.png')
+
 plot_localtime_histograms(df_sihex_ke, 'SiHex - ke', 'sihex_ke_localtime.png')
 plot_localtime_histograms(df_bcsf_ke, 'BCSF - ke', 'bcsf_ke_localtime.png')
+
 plot_weekday_histograms(df_sihex_ke, 'SiHex - ke', 'sihex_ke_weekday.png')
 plot_weekday_histograms(df_bcsf_ke, 'BCSF - ke', 'bcsf_ke_weekday.png')
+
+plot_bar_stacked(df_sihex_workday, df_sihex_night_weekend, 
+                 'SIHEX day/night/weekend', 'sihex_day_night_weekend.png')
+plot_bar_stacked(df_bcsf_workday, df_bcsf_night_weekend, 
+                 'BCSF day/night/weekend', 'bcsf_day_night_weekend.png')
+
+

@@ -136,6 +136,7 @@ def get_weekday(row):
 
 def extract_local_hour_weekday(df):
 
+    ts.tz_localize('UTC')
     df['LOCAL_HOUR'] = df.apply(get_localtime, axis=1)
     df['WEEKDAY'] = df.apply(get_weekday, axis=1)
 
