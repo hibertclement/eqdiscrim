@@ -2,7 +2,6 @@ import pandas as pd
 import numpy as np
 import pytz
 from datetime import datetime
-from dateutil import tz
 
 utc = pytz.utc
 
@@ -11,9 +10,11 @@ utc = pytz.utc
 renass_txt = '../static_catalogs/RENASS_stations_2014.txt'
 stations_csv = '../static_catalogs/stations_fr.csv'
 
+
 def construct_otime(row):
     date = row['OTIME']
     return utc.localize(datetime.strptime(date, "%Y-%m-%dT%H:%M:%S.%f"))
+
 
 def read_BCSF_RENASS_cat(fname):
     names = list(["ID", "OTIME", "LAT", "LON", "PROF", "AUTEUR", "TYPE", "Mw"])
@@ -23,6 +24,7 @@ def read_BCSF_RENASS_cat(fname):
 
     return df
 
+"""
 def read_renass():
 
     # read the txt file using pandas
@@ -32,6 +34,8 @@ def read_renass():
     stations = s_pd[names].values
 
     return stations, names
+"""
+
 
 def construct_stime(row):
 
@@ -61,6 +65,7 @@ def construct_stime(row):
 
     return stime
 
+
 def construct_etime(row):
     e_date_parts = row['DATEFIN'].split('/')
     e_time_parts = row['HFIN'].split(':')
@@ -85,10 +90,12 @@ def read_stations_fr_dataframe():
     s_pd = pd.read_csv(stations_csv)
     s_pd['STIME'] = s_pd.apply(construct_stime, axis=1)
     s_pd['ETIME'] = s_pd.apply(construct_etime, axis=1)
-    s_pd.drop(['DATEDEB', 'DATEFIN', 'HDEB', 'HFIN', 'NET'], axis=1, inplace=True)
+    s_pd.drop(['DATEDEB', 'DATEFIN', 'HDEB', 'HFIN', 'NET'], axis=1,
+              inplace=True)
 
     return s_pd
 
+"""
 def read_stations_fr():
 
     # read the csv file using pandas
@@ -152,3 +159,4 @@ def read_stations_fr():
     names.append("ETIME")
 
     return stations, names
+"""

@@ -4,10 +4,12 @@ import os
 from datetime import datetime
 from dateutil import tz
 from shapely.geometry import Polygon, Point
-from pickle import load
+
+# ---------------
+# constants
+# ---------------
 
 utc = tz.gettz('UTC')
-
 catalog_dir = '../static_catalogs'
 
 # files to be read (static for now - ugly but efficient - fix later)
@@ -15,6 +17,11 @@ sihex_xls = 'SIHEXV2-inout-final.xlsx'
 sihex_txt = 'SIHEXV2-catalogue-final.txt'
 notecto_lst = 'no_tecto.lst'
 sihex_bound = 'line20km.xy.txt'
+
+
+# -------------
+# functions
+# -------------
 
 def construct_otime(row):
 
@@ -64,6 +71,7 @@ def read_all_sihex_files(catalog_dir):
 
     return df_sihex
 
+
 def clean_sihex_data(df):
 
     print "Cleaning bad sihex indexes"
@@ -87,8 +95,9 @@ def clean_sihex_data(df):
     df.drop(640818, inplace=True)
     # this next event is rather too deep
     df.drop(159405, inplace=True)
-    
+
     return df
+
 
 def mask_to_sihex_boundaries(catalog_dir, df):
 
@@ -107,11 +116,13 @@ def mask_to_sihex_boundaries(catalog_dir, df):
 
     return df
 
+
 def check_boundary(row, poly):
 
     point = Point(row['LON'], row['LAT'])
     return point.within(poly)
 
+"""
 def read_sihex_xls(filename, inout=True):
 
     data_frame = pd.read_excel(filename, sheetname=0)
@@ -134,7 +145,8 @@ def read_notecto_lst(catalog_dir):
 
     # read the shape file
     sh_names = list(["LON", "LAT"])
-    sh_tmp = pd.read_table(os.path.join(catalog_dir, sihex_bound), sep='\s+', header=None, names=sh_names)
+    sh_tmp = pd.read_table(os.path.join(catalog_dir, sihex_bound), sep='\s+',
+                           header=None, names=sh_names)
     sh = sh_tmp[sh_names].values
     sh_tup = zip(sh[:, 0], sh[:, 1])
     poly = Polygon(sh_tup)
@@ -199,7 +211,8 @@ def read_sihex_xls(catalog_dir, inout=True):
     # read the excel file into pandas data frames
     eq_in = pd.read_excel(os.path.join(catalog_dir, sihex_xls), sheetname=0)
     if inout:
-        eq_out = pd.read_excel(os.path.join(catalog_dir, sihex_xls), sheetname=1)
+        eq_out = pd.read_excel(os.path.join(catalog_dir, sihex_xls),
+                               sheetname=1)
 
     # date-time reading
     DT_names = list(["DATE", "HEURE"])
@@ -277,10 +290,8 @@ def read_sihex_xls(catalog_dir, inout=True):
     return X, y, names
 
 def read_sihex_tidy(table_fname, header_fname):
-    """
     Reads tidy sihex data and returns both the table and a dictionary
     containing the header information.
-    """
 
     f_ = open(table_fname, 'r')
     X = load(f_)
@@ -306,4 +317,4 @@ def write_sihex_tidy_excel(table, header, otimes, fname):
     df.to_excel(writer, sheet_name='SiHex')
     writer.save()
 
-
+"""

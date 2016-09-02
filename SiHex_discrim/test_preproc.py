@@ -1,26 +1,9 @@
-import unittest
 import numpy as np
 from datetime import datetime
-from preproc import latlon_to_xy, xy_to_latlon
-from preproc import dist_to_n_closest_stations
-from preproc import n_stations_per_year
 from preproc import GutenbergRichter
 from preproc import toHourFraction, toWeekdayFraction
 
-
-def suite():
-
-    suite = unittest.TestSuite()
-    suite.addTest(GeoPreprocTests('test_latlon_conversion'))
-    suite.addTest(GeoPreprocTests('test_dist_to_nth_station'))
-    suite.addTest(GeoPreprocTests('test_dist_to_nth_station_pathological'))
-    suite.addTest(GeoPreprocTests('test_dist_to_nth_station_timing'))
-    suite.addTest(GeoPreprocTests('test_n_stations_per_year'))
-    suite.addTest(GeoPreprocTests('test_GutenbergRichter'))
-    suite.addTest(GeoPreprocTests('test_timeFractions'))
-    return suite
-
-
+"""
 class GeoPreprocTests(unittest.TestCase):
 
     def test_latlon_conversion(self):
@@ -138,38 +121,36 @@ class GeoPreprocTests(unittest.TestCase):
 
         self.assertTrue(n_bef_1970 >= year_count[0, 1])
 
-    def test_GutenbergRichter(self):
-
-        # make a uniform distribution as a function of magnitude
-        N0 = 10     # number of events in largest magnitude
-        mags = np.arange(0, 5, 0.1)     # magnitude windows
-        nmags = len(mags)-1
-        Ntmp = (np.arange(nmags)+1)*N0
-        N = Ntmp[::-1]
-        log10N = np.log10(N)
-        magnitudes = np.empty(nmags*N0, dtype=np.float)
-        for i in xrange(nmags):
-            magnitudes[i*N0:(i+1)*N0] = mags[i]+0.01
-
-        # call GR function
-        log10N_GR, mags = GutenbergRichter(magnitudes, 0, 5, 0.1)
-
-        np.testing.assert_array_almost_equal(log10N, log10N_GR, 5)
-
-    def test_timeFractions(self):
-
-        d = datetime(2000, 6, 1, 3, 15, 0, 0)
-        hf_expected = 3.25
-        hf = toHourFraction(d)
-        self.assertAlmostEqual(hf_expected, hf)
-
-        d = datetime(2000, 6, 1, 6, 0, 0, 0)
-        wf_expected = 4.25
-        wf = toWeekdayFraction(d)
-        self.assertAlmostEqual(wf_expected, wf)
-        
+"""
 
 
-if __name__ == '__main__':
+def test_GutenbergRichter():
 
-    unittest.TextTestRunner(verbosity=2).run(suite())
+    # make a uniform distribution as a function of magnitude
+    N0 = 10     # number of events in largest magnitude
+    mags = np.arange(0, 5, 0.1)     # magnitude windows
+    nmags = len(mags)-1
+    Ntmp = (np.arange(nmags)+1)*N0
+    N = Ntmp[::-1]
+    log10N = np.log10(N)
+    magnitudes = np.empty(nmags*N0, dtype=np.float)
+    for i in xrange(nmags):
+        magnitudes[i*N0:(i+1)*N0] = mags[i]+0.01
+
+    # call GR function
+    log10N_GR, mags = GutenbergRichter(magnitudes, 0, 5, 0.1)
+
+    np.testing.assert_array_almost_equal(log10N, log10N_GR, 5)
+
+
+def test_timeFractions():
+
+    d = datetime(2000, 6, 1, 3, 15, 0, 0)
+    hf_expected = 3.25
+    hf = toHourFraction(d)
+    assert hf_expected == hf
+
+    d = datetime(2000, 6, 1, 6, 0, 0, 0)
+    wf_expected = 4.25
+    wf = toWeekdayFraction(d)
+    assert wf_expected == wf

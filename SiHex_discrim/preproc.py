@@ -1,7 +1,7 @@
 import numpy as np
 from pyproj import Proj
 from dateutil import tz
-from cat_io.renass_io import read_stations_fr_dataframe
+from renass_io import read_stations_fr_dataframe
 
 
 p = Proj(proj='utm', zone=31, ellps='WGS84')
@@ -65,13 +65,11 @@ def dist_to_closest_stations(row, sta_df, n_close):
         return np.NaN
     
 
-
+"""
 def latlon_to_xy(X, names, ilat, ilon):
-    """
         Given an attribute matrix X, and the indexes corresponding to the
         latitude and longitude attributes, returns a new attribute matrix where
         the lat and lons are now y and x in the appropriate reference system.
-    """
     # extract the longitudes and latitudes
     nev, nat = X.shape
     lon = X[:, ilon]
@@ -96,11 +94,9 @@ def latlon_to_xy(X, names, ilat, ilon):
 
 
 def xy_to_latlon(X, names, ix, iy):
-    """
         Given an attribute matrix X, and the indexes corresponding to the
         x and y attributes, returns a new attribute matrix where
         the x and y are now lon and lat in the appropriate reference system.
-    """
     # extract the longitudes and latitudes
     nev, nat = X.shape
     x = X[:, ix]
@@ -122,7 +118,7 @@ def xy_to_latlon(X, names, ix, iy):
     names_new[iy] = 'LON'
 
     return X_new, names_new
-
+"""
 
 def get_localtime(row):
     loctime = row['OTIME'].astimezone(to_zone)
@@ -136,14 +132,13 @@ def get_weekday(row):
 
 def extract_local_hour_weekday(df):
 
-    ts.tz_localize('UTC')
     df['LOCAL_HOUR'] = df.apply(get_localtime, axis=1)
     df['WEEKDAY'] = df.apply(get_weekday, axis=1)
 
     return df
 
+"""
 def dist_to_n_closest_stations(X_xy, S_xy, n, timing=False):
-    """
     Returns a numpy array containing the distance (in reduced coordinates) to
     the n nearest stations. If there are fewer than n stations, then the
     returned array is padded with the largest available distance for each
@@ -161,7 +156,6 @@ def dist_to_n_closest_stations(X_xy, S_xy, n, timing=False):
     :rtype: a 2D numpy array containing one line per event and n columns, the
         distances to the n closest stations. This array may contain fewer
         events than the input X_xy array
-    """
 
     nev, nd = X_xy.shape
     nst, nd = S_xy.shape
@@ -209,7 +203,6 @@ def dist_to_n_closest_stations(X_xy, S_xy, n, timing=False):
 
 
 def n_stations_per_year(S_start_end, start_year, end_year):
-    """
     Returns the number of stations per year (only precise to the nearest year).
 
     :param S_start_end: a 2D ndarray containing one row per station and two
@@ -219,7 +212,6 @@ def n_stations_per_year(S_start_end, start_year, end_year):
     :param end_year: last year of interest
     :rtype: a 2D ndarray containing years and number of active stations in its
         two columns
-    """
 
     nst, nd = S_start_end.shape
     nyears = end_year - start_year + 1
@@ -237,6 +229,7 @@ def n_stations_per_year(S_start_end, start_year, end_year):
 
     return year_count
 
+"""
 
 def GutenbergRichter(magnitudes, mag_min, mag_max, step):
     """
@@ -277,12 +270,11 @@ def toWeekdayFraction(date):
 
     return date.isoweekday() + day_fraction
 
+"""
 def equalize_classes(X, Y):
-    """
     Takes an X matrix and Y vector in which the classes are unbalanced, and
     returns an X matrix and Y vector with the same number of elements in each
     class. This number is given by the smallest class. 
-    """
     # isolate the classes
     classes = np.unique(Y)
     n_class = len(classes)
@@ -306,7 +298,7 @@ def equalize_classes(X, Y):
     Y_uni = np.hstack(Y_tmp_list)
 
     return X_uni, Y_uni
-
+"""
 
 
 
