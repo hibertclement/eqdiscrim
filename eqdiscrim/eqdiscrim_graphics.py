@@ -106,6 +106,7 @@ def plot_learning_curve(train_sizes, train_scores, valid_scores, title, fname):
 
     plt.savefig(fname)
 
+
 def plot_confusion_matrix(cm, labels, title, fname, cmap=plt.cm.Blues):
     fig = plt.figure()
     plt.imshow(cm, interpolation='nearest', cmap=cmap)
@@ -114,7 +115,19 @@ def plot_confusion_matrix(cm, labels, title, fname, cmap=plt.cm.Blues):
     tick_marks = np.arange(len(labels))
     plt.xticks(tick_marks, labels, rotation=45)
     plt.yticks(tick_marks, labels)
-    plt.tight_layout()
     plt.ylabel('True label')
     plt.xlabel('Predicted label')
+    plt.savefig(fname)
+
+
+def plot_att_matrix(matrix, row_names, col_names, figdir,
+                          cmap=plt.cm.Blues):
+    fname = os.path.join(figdir, 'attribute_matrix.png')
+
+    fig = plt.figure(figsize=(15, 6))
+    plt.imshow(matrix, interpolation='nearest', cmap=cmap)
+    x_tick_marks = np.arange(len(col_names))
+    y_tick_marks = np.arange(len(row_names))
+    plt.xticks(x_tick_marks, col_names, rotation=90)
+    plt.yticks(y_tick_marks, row_names)
     plt.savefig(fname)

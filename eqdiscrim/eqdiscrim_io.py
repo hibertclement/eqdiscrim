@@ -80,6 +80,15 @@ class Config(object):
 
         # Figures
         self.figdir = config.get('Figures', 'figdir')
+        self.do_histograms = config.getboolean('Figures', 'do_histograms')
+        self.do_att_matrix = config.getboolean('Figures', 'do_att_matrix')
+        self.do_scatterplots = config.getboolean('Figures', 'do_scatterplots')
+        self.do_lda_plots = config.getboolean('Figures', 'do_lda_plots')
+        self.do_timeplots = config.getboolean('Figures', 'do_timeplots')
+        self.do_radviz = config.getboolean('Figures', 'do_radviz')
+
+        self.color_list = self.parse_list_(config.get('Figures',
+                                                         'color_list'))
 
         # Learning
         self.do_learning_curve = config.getboolean('Learning',
