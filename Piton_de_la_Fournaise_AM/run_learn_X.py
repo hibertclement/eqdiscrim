@@ -43,11 +43,12 @@ def balance_classes(cfg, df_full, classes):
         try:
             df_list.append(df_full[df_full['EVENT_TYPE'] ==
                                    ev_type].sample(n=cfg.max_events,
-                                                   replace=True))
-#                                                    replace=False))
+                                   replace=cfg.train_with_replacement))
         except ValueError:
-            continue
-#            df_list.append(df_full[df_full['EVENT_TYPE'] == ev_type])
+            if cfg.train_with_replacement:
+                continue
+            else:
+                df_list.append(df_full[df_full['EVENT_TYPE'] == ev_type])
     X_df = pd.concat(df_list)
     print X_df['EVENT_TYPE'].value_counts()
 

@@ -14,8 +14,8 @@ def plot_histograms(df_list, att_list, color_list, figdir, sta):
             df[att_name].apply(np.log10).plot.hist(20, alpha=0.5, normed=True,
                                                  color=c, label=label)
         plt.legend(loc='best')
-        plt.xlabel('Log_10 (attribute)')
-        plt.title("%s - %s" % (sta, att_name))
+        plt.xlabel('Log_10 (feature)')
+        plt.title("%s - %s" % (sta, att_name), fontsize=20)
         plt.savefig(os.path.join(figdir, "%s_%s_hist.png" % (sta, att_name)))
 
 def plot_scatterplots(df_list, att_list, color_list, figdir, sta):
@@ -124,7 +124,7 @@ def plot_confusion_matrix(cm, labels, title, fname, cmap=plt.cm.Greys):
 
 
 def plot_att_matrix(matrix, row_names, col_names, figdir,
-                          cmap=plt.cm.Blues):
+                          cmap=plt.cm.Greys):
     fname = os.path.join(figdir, 'attribute_matrix.png')
 
     fig = plt.figure(figsize=(15, 6))

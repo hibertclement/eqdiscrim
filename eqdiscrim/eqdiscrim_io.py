@@ -98,6 +98,9 @@ class Config(object):
                                                    'do_learning_curve')
         self.output_info = config.getboolean('Learning', 'output_info')
         self.max_events = config.getint('Learning', 'max_events')
+        self.train_with_replacement = \
+            config.getboolean('Learning', 'train_with_replacement')
+
         self.n_best_atts = config.getint('Learning', 'n_best_atts')
         self.best_atts_fname = \
             os.path.join(self.runfile_dir,
