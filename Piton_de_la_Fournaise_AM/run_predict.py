@@ -107,7 +107,7 @@ def plot_prob(prob, classes, starttime, cfg):
 
     width = 0.75
     ind = np.arange(len(prob))
-    plt.figure(figsize=(8, 7))
+    plt.figure(figsize=(9, 7))
     imax = np.argmax(prob)
     plt.barh(ind, prob, width, color='k', alpha=0.5)
     plt.scatter(prob[imax] * 1.05, ind[imax] + width / 2.,  marker='*',
@@ -115,8 +115,8 @@ def plot_prob(prob, classes, starttime, cfg):
     plt.xlabel('Probability')
     plt.yticks(ind + width / 2., classes)
     plt.xlim([0, prob[imax] * 1.2])
-    plt.title("%s - %s - %.2f percent" % (starttime.isoformat(), classes[imax],
-                                          prob[imax] * 100.), fontsize=20)
+    plt.title("%s - %s - %.2f %%" % (starttime.isoformat(), classes[imax],
+                                          prob[imax] * 100.), fontsize=18)
 
     fname = '%s_%s_%.2f.png' % (starttime.isoformat(), classes[imax],
                                 prob[imax])
@@ -224,15 +224,15 @@ if __name__ == '__main__':
 
     # Effondrement
     # args = cl_parser.parse_args(['eqdiscrim_paper.cfg', '2016-06-02T20:22:25.60',
-    #                              '5.96'])
+    #                             '5.96'])
 
     # Sommital
     # args = cl_parser.parse_args(['eqdiscrim_paper.cfg', '2016-06-08T20:57:24.54',
-    #                             '3.8'])
+    #                            '3.8'])
 
     # Indetermine
     # args = cl_parser.parse_args(['eqdiscrim_paper.cfg', '2016-06-04T03:48:28.52',
-    #                             '11.64'])
+    #                            '11.64'])
 
     # Local
     # args = cl_parser.parse_args(['eqdiscrim_paper.cfg', '2016-06-04T07:18:20.12',
