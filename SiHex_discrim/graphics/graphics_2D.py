@@ -8,7 +8,7 @@ colors = ['blue', 'lime', 'red', 'yellow', 'cyan', 'orange',
 
 epochs = [1970, 1978, 1990]
 
-figdir = '../figures'
+figdir = './figures'
 
 
 # plot 2D clusters
