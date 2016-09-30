@@ -107,16 +107,16 @@ def plot_prob(prob, classes, starttime, cfg):
 
     width = 0.75
     ind = np.arange(len(prob))
-    plt.figure()
+    plt.figure(figsize=(8, 7))
     imax = np.argmax(prob)
-    plt.barh(ind, prob, width, color='b', alpha=0.5)
+    plt.barh(ind, prob, width, color='k', alpha=0.5)
     plt.scatter(prob[imax] * 1.05, ind[imax] + width / 2.,  marker='*',
                 color='black', s=250)
     plt.xlabel('Probability')
     plt.yticks(ind + width / 2., classes)
     plt.xlim([0, prob[imax] * 1.2])
     plt.title("%s - %s - %.2f percent" % (starttime.isoformat(), classes[imax],
-                                          prob[imax] * 100.))
+                                          prob[imax] * 100.), fontsize=20)
 
     fname = '%s_%s_%.2f.png' % (starttime.isoformat(), classes[imax],
                                 prob[imax])
