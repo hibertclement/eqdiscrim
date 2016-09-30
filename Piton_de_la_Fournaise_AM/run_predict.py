@@ -197,8 +197,19 @@ def run_predict(args):
     print "Time for data request %0.2f" % (t3-t2)
     print "Time for attribute calculation %0.2f" % (t5-t4)
     print "Time for prediction %0.2f" % (t6-t5)
+
+
+    # decide on class names
+    if cfg.do_translation:
+        n_names = len(cfg.event_types)
+        tr_dict = {}
+        for i in xrange(n_names):
+            tr_dict[cfg.event_types[i]] = cfg.event_types_translated[i]
+        class_names = [tr_dict[clf.classes_[i]] for i in xrange(len(clf.classes_))]
+    else:
+        class_names = clf.classes_
     
-    plot_prob(p_matrix[0, :], clf.classes_, args.starttime, cfg)
+    plot_prob(p_matrix[0, :], class_names, args.starttime, cfg)
 
 
 if __name__ == '__main__':
@@ -212,19 +223,19 @@ if __name__ == '__main__':
                            type=float)
 
     # Effondrement
-    # args = cl_parser.parse_args(['eqdiscrim_VF.cfg', '2016-06-02T20:22:25.60',
+    # args = cl_parser.parse_args(['eqdiscrim_paper.cfg', '2016-06-02T20:22:25.60',
     #                              '5.96'])
 
     # Sommital
-    # args = cl_parser.parse_args(['eqdiscrim_VF.cfg', '2016-06-08T20:57:24.54',
+    # args = cl_parser.parse_args(['eqdiscrim_paper.cfg', '2016-06-08T20:57:24.54',
     #                             '3.8'])
 
     # Indetermine
-    # args = cl_parser.parse_args(['eqdiscrim_VF.cfg', '2016-06-04T03:48:28.52',
+    # args = cl_parser.parse_args(['eqdiscrim_paper.cfg', '2016-06-04T03:48:28.52',
     #                             '11.64'])
 
     # Local
-    # args = cl_parser.parse_args(['eqdiscrim_VF.cfg', '2016-06-04T07:18:20.12',
+    # args = cl_parser.parse_args(['eqdiscrim_paper.cfg', '2016-06-04T07:18:20.12',
     #                              '9.4'])
 
     # parse input
