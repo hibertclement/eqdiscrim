@@ -270,7 +270,8 @@ def read_MC3_dump_file(filename):
 
 
 def get_webservice_data(net, sta, cha, starttime, endtime):
-    url = 'http://eida.ipgp.fr/fdsnws/dataselect/1/query?'
+    #url = 'http://eida.ipgp.fr/fdsnws/dataselect/1/query?'
+    url = 'http://195.83.188.22:8080/fdsnws/dataselect/1/query?'
     url = url + 'network=%s' % net
     url = url + '&station=%s' % sta
     url = url + '&channel=%s' % cha
@@ -322,6 +323,7 @@ def get_waveform_data(starttime, window_length, net, sta, cha, inv,
     pre_filt = [0.005, 0.01, 35., 45.]
 
     if obs is 'OVPF':
+        print("Getting data for %s from Arclink" % (sta))
         st = get_OVPF_arclink_data(net, sta, "*", cha, s_time, e_time)
         if st is None:
             return None
@@ -338,17 +340,22 @@ def get_waveform_data(starttime, window_length, net, sta, cha, inv,
             return None
         os.unlink(fname)
 
+    print("Detrend")
     st.detrend()
 
     if simulate:
+        print("Simulate")
         # inv actually contains a parser object that has read a dataless seed
         # file
         st.simulate(seedresp={'filename': inv, 'units': "VEL"})
     else:
+        print("Remove response")
         # inv contains a stationxml inventory complete with responses
         st.attach_response(inv)
         st.remove_response(pre_filt=pre_filt)
+    print("Slice")
     st = st.slice(starttime, starttime + window_length)
+    print("Detrend")
     st.detrend()
 
     return st
