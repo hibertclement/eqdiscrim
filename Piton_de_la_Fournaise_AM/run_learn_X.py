@@ -43,11 +43,12 @@ def balance_classes(cfg, df_full, classes):
         try:
             df_list.append(df_full[df_full['EVENT_TYPE'] ==
                                    ev_type].sample(n=cfg.max_events,
-                                                   replace=True))
-#                                                    replace=False))
+                                   replace=cfg.train_with_replacement))
         except ValueError:
-            continue
-#            df_list.append(df_full[df_full['EVENT_TYPE'] == ev_type])
+            if cfg.train_with_replacement:
+                continue
+            else:
+                df_list.append(df_full[df_full['EVENT_TYPE'] == ev_type])
     X_df = pd.concat(df_list)
     print X_df['EVENT_TYPE'].value_counts()
 
@@ -93,8 +94,12 @@ def run_classification(cfg, X_df, sta, cross_valid=False, output_info=False):
 
     # get cross_validation score
     if cross_valid:
-        print('\nCross validation scores using OVPF metric')
-        cv_scores = cross_val_score(clf, X[:, 1:], y, scoring=OVPF_scorer, cv=5)
+        if len(labels)>2:
+            print('\nCross validation scores using OVPF metric')
+            cv_scores = cross_val_score(clf, X[:, 1:], y, scoring=OVPF_scorer, cv=5)
+        else:
+            print('\nCross validation scores using standard metric')
+            cv_scores = cross_val_score(clf, X[:, 1:], y, cv=5)
         score_mean = np.mean(cv_scores)
         score_2std = 2 * np.std(cv_scores)
         print("%.2f (+/-) %.2f" % (score_mean, score_2std))
@@ -108,11 +113,19 @@ def run_classification(cfg, X_df, sta, cross_valid=False, output_info=False):
 
 
     if output_info:
+
+        if cfg.do_translation:
+            n_names = len(cfg.event_types)
+            tr_dict = {}
+            for i in xrange(n_names):
+                tr_dict[cfg.event_types[i]] = cfg.event_types_translated[i]
+            new_labels = [tr_dict[lab] for lab in labels]
+            labels = new_labels
         print('\nConfusion matrix')
         cm = confusion_matrix(y_test, y_pred)
         cm_norm = cm.astype('float') / cm.sum(axis=1)[:, np.newaxis]
         print cm
-        gr.plot_confusion_matrix(cm_norm, labels, '%s : %.2f (+/-) %.2f'
+        gr.plot_confusion_matrix(cm_norm * 100, labels, '%s : %.2f (+/-) %.2f'
                                  % (sta, score_mean * 100, score_2std * 100),
                                  os.path.join(cfg.figdir,
                                               'cm_norm_%s.png' % sta))

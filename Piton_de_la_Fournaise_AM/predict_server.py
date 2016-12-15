@@ -1,36 +1,47 @@
+#!/usr/bin/python
 import pickle
 import glob
 import argparse
 import pandas as pd
 import numpy as np
 import os
+from SimpleXMLRPCServer import SimpleXMLRPCServer
 import matplotlib.pyplot as plt
 from obspy import UTCDateTime, read, Stream, read_inventory
 from obspy.io.xseed import Parser
 import attributes as att
 import eqdiscrim_io as io
+import time
+import json
+
+server = SimpleXMLRPCServer(("195.83.188.56", 8000))
 
 pd.set_option('mode.use_inf_as_null', True)
 
-def get_data_OVPF(cfg, starttime, window_length):
+def get_data_OVPF(cfg, starttime, window_length, inv):
     
-    inv = read_inventory(cfg.response_fname)
+    time2 = time.time()
+    print("Configure parser")
     parser = Parser(cfg.BOR_response_fname)
 
+    time3 = time.time()
     st = Stream()
     for sta in cfg.station_names:
+        print("Getting waveform for %s" % (sta))
         if sta == 'BOR':
             st_tmp = io.get_waveform_data(starttime, window_length,
-                                                    'PF', sta, '??Z', parser,
+                                                    'PF', sta, 'EHZ', parser,
                                                     simulate=True)
         else:
             st_tmp = io.get_waveform_data(starttime, window_length,
-                                                    'PF', sta, '??Z', inv)
+                                                    'PF', sta, 'HHZ', inv)
 
         if st_tmp is not None:
 
             st += st_tmp
-
+    time4 = time.time()
+    print "Time for configuring parser %0.2f" % (time3-time2)
+    print "Time for getting waveforms %0.2f" % (time4-time3)
     return st
 
 def get_clf_dict_from_combinations(combinations, clfdir):
@@ -103,50 +114,47 @@ def get_clf_key_from_stalist_and_combinations(sta_list, combinations):
         return None
 
 
-def plot_prob(prob, classes, starttime, cfg):
+def plot_prob(prob, classes, starttime):
 
     width = 0.75
     ind = np.arange(len(prob))
-    plt.figure(figsize=(9, 7))
+    plt.figure()
     imax = np.argmax(prob)
-    plt.barh(ind, prob, width, color='k', alpha=0.5)
+    plt.barh(ind, prob, width, color='b', alpha=0.5)
     plt.scatter(prob[imax] * 1.05, ind[imax] + width / 2.,  marker='*',
                 color='black', s=250)
     plt.xlabel('Probability')
     plt.yticks(ind + width / 2., classes)
     plt.xlim([0, prob[imax] * 1.2])
-    plt.title("%s - %s - %.2f %%" % (starttime.isoformat(), classes[imax],
-                                          prob[imax] * 100.), fontsize=18)
+    plt.title("%s - %s - %.2f percent" % (starttime.isoformat(), classes[imax],
+                                          prob[imax] * 100.))
 
-    fname = '%s_%s_%.2f.png' % (starttime.isoformat(), classes[imax],
-                                prob[imax])
-    plt.savefig(os.path.join(cfg.figdir, fname))
     plt.show()
 
 
-def run_predict(args):
+def run_predict(starttime_str, duration):
 
+    print("Run predict")
+
+    print("Parameters : %s - %s " % (starttime_str, duration)) 
+    starttime = UTCDateTime(starttime_str)
     # import pdb; pdb.set_trace()
-    import time
 
     t1 = time.time()
     
-    # get configuration
-    cfg = io.Config(args.config_file)
-
-    # set up classifiers to use
-    clf_dict = get_clf_dict_from_combinations(cfg.combinations, cfg.clfdir)
 
     t2 = time.time()
     # request data from the stations
     if cfg.do_use_saved_data:
         data_fname = os.path.join(cfg.data_dir, "39160_PF.*.MSEED")
-        st = read(data_fname, starttime=args.starttime,
-                  endtime=args.starttime + args.duration)
+        st = read(data_fname, starttime=starttime,
+                  endtime=starttime + duration)
     else:
-        st = get_data_OVPF(cfg, args.starttime, args.duration)
+        print("Getting data")
+        st = get_data_OVPF(cfg, starttime, duration, inv)
     t3 = time.time()
 
+    
     # select classifier as a function of which stations are present
     sta_names = np.unique([tr.stats.station for tr in st])
     # clf_key = get_clf_key_from_stalist(clf_dict, sta_names)
@@ -163,6 +171,7 @@ def run_predict(args):
     # calculate attributes, combine and prune according to classifier
     n_sta = len(sta_names)
     for sta in sta_names:
+        print ("Processing %s" % (sta))
         st_sta = st.select(station=sta)
         attributes, att_names = att.get_all_single_station_attributes(st_sta)
         df_att_sta = pd.DataFrame(attributes, columns=att_names)
@@ -198,48 +207,34 @@ def run_predict(args):
     print "Time for attribute calculation %0.2f" % (t5-t4)
     print "Time for prediction %0.2f" % (t6-t5)
 
+    print p_matrix[0]
+    print clf.classes_
 
-    # decide on class names
-    if cfg.do_translation:
-        n_names = len(cfg.event_types)
-        tr_dict = {}
-        for i in xrange(n_names):
-            tr_dict[cfg.event_types[i]] = cfg.event_types_translated[i]
-        class_names = [tr_dict[clf.classes_[i]] for i in xrange(len(clf.classes_))]
-    else:
-        class_names = clf.classes_
-    
-    plot_prob(p_matrix[0, :], class_names, args.starttime, cfg)
+    result = dict()
 
+    for event_type, probability in zip(clf.classes_, p_matrix[0]) :
+        print event_type
+        print probability
+	result[event_type] = probability
+
+    #return "%s|%s" % (y[0],np.max(p_matrix))
+    print json.dumps(result)
+    return json.dumps(result)
 
 if __name__ == '__main__':
 
-    # set up parser
-    cl_parser = argparse.ArgumentParser(description='Launch classification.')
-    cl_parser.add_argument('config_file', help='eqdiscrim configuration file')
-    cl_parser.add_argument('starttime', type=UTCDateTime,
-                           help='Timestamp of first point in window')
-    cl_parser.add_argument('duration', help='Window duration in seconds',
-                           type=float)
 
-    # Effondrement
-    # args = cl_parser.parse_args(['eqdiscrim_paper.cfg', '2016-06-02T20:22:25.60',
-    #                             '5.96'])
+    # get configuration
+    print("Getting configuration")
+    cfg = io.Config("eqdiscrim_VF.cfg")
 
-    # Sommital
-    # args = cl_parser.parse_args(['eqdiscrim_paper.cfg', '2016-06-08T20:57:24.54',
-    #                            '3.8'])
+    # set up classifiers to use
+    print("Setting up classifiers to use")
+    clf_dict = get_clf_dict_from_combinations(cfg.combinations, cfg.clfdir)
 
-    # Indetermine
-    # args = cl_parser.parse_args(['eqdiscrim_paper.cfg', '2016-06-04T03:48:28.52',
-    #                            '11.64'])
+    print("Read inventory")
+    inv = read_inventory(cfg.response_fname)
 
-    # Local
-    # args = cl_parser.parse_args(['eqdiscrim_paper.cfg', '2016-06-04T07:18:20.12',
-    #                              '9.4'])
 
-    # parse input
-    args = cl_parser.parse_args()
-
-    # run program
-    run_predict(args)
+    server.register_function(run_predict, 'run_predict')
+    server.serve_forever()

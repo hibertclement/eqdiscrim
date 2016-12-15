@@ -44,6 +44,11 @@ def run_explore_data(args):
 
     cfg = io.Config(args.config_file)
 
+    if cfg.do_translation:
+        n_names = len(cfg.event_types)
+        tr_dict = {}
+        for i in xrange(n_names):
+            tr_dict[cfg.event_types[i]] = cfg.event_types_translated[i]
 
     if not os.path.exists(cfg.figdir):
         os.mkdir(cfg.figdir)
@@ -79,6 +84,8 @@ def run_explore_data(args):
         df_list = []
         for evtype in cfg.event_types:
             df = X_df_full[X_df_full['EVENT_TYPE'] == evtype]
+            if cfg.do_translation:
+                df['EVENT_TYPE'] = tr_dict[evtype]
             df_list.append(df)
 
         # histograms
